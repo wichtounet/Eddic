@@ -109,7 +109,7 @@ int Compiler::compile_only(const std::string& file, Platform platform, std::shar
     if(program && configuration->option_defined("stats")){
         std::cout << "Statistics" << std::endl;
 
-        for(auto& counter : program->context->stats()){
+        for(const auto& counter : program->context->stats()){
             std::cout << "\t" << counter.first << ":" << counter.second << std::endl;
         }
     }
@@ -158,7 +158,7 @@ std::unique_ptr<mtac::Program> Compiler::compile_mtac(const std::string& file, P
         }
     }
 
-    return std::move(program);
+    return program;
 }
 
 void Compiler::compile_ltac(mtac::Program& program, Platform platform, std::shared_ptr<Configuration> configuration, FrontEnd& front_end){
