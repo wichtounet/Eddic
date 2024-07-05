@@ -5,6 +5,8 @@
 //  http://opensource.org/licenses/MIT)
 //=======================================================================
 
+#include <algorithm>
+
 #include "cpp_utils/assert.hpp"
 
 #include "logging.hpp"

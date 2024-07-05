@@ -6,6 +6,7 @@
 //=======================================================================
 
 #include <unordered_map>
+#include <algorithm>
 
 #include "mtac/ControlFlowGraph.hpp"
 #include "mtac/Function.hpp"

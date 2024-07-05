@@ -8,11 +8,13 @@
 #ifndef EDDIC_BOOST_CFG_H
 #define EDDIC_BOOST_CFG_H
 
+#include <boost/throw_exception.hpp>
+
 #include <exception>
 
 namespace boost {
 
-[[noreturn]] inline void throw_exception( const std::exception & ){
+BOOST_NORETURN inline void throw_exception( const std::exception & ){
     std::terminate();
 };
 
