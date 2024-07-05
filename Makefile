@@ -8,7 +8,7 @@ RELEASE_TEST_EXE=release/bin/test
 include make-utils/flags.mk
 include make-utils/cpp-utils.mk
 
-CXX_FLAGS += -ftemplate-depth-2048 -use-gold -Iinclude -Icxxopts/src
+CXX_FLAGS += -ftemplate-depth-2048 -use-gold -Iinclude -Icxxopts/include
 LD_FLAGS += -lboost_system
 
 # Enable coverage if enabled for the user
