@@ -47,20 +47,12 @@ typedef x3::variant<
  * \class ASTSourceFile
  * \brief The AST root node for a program.
  */
-struct SourceFile : x3::file_position_tagged {
+struct SourceFile : x3::file_position_tagged, std::vector<SourceFileBlock> {
     std::shared_ptr<GlobalContext> context;
-
-    std::vector<SourceFileBlock> blocks;
 };
 
 } //end of ast
 
 } //end of eddic
-
-//Adapt the struct for the AST
-BOOST_FUSION_ADAPT_STRUCT(
-    eddic::ast::SourceFile,
-    (std::vector<eddic::ast::SourceFileBlock>, blocks)
-)
 
 #endif
