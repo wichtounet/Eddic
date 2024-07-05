@@ -35,12 +35,6 @@ using namespace eddic;
 
 namespace x3_grammar {
 
-    typedef x3::with_context<
-        error_handler_tag
-        , std::reference_wrapper<global_error_handler> const
-        , phrase_context_type>::type
-        context_type;
-
     x3::symbols<ast::Operator> multiplicative_op;
     x3::symbols<ast::Operator> additive_op;
     x3::symbols<ast::Operator> relational_op;
