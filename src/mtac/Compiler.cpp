@@ -38,12 +38,12 @@ using namespace eddic;
 
 namespace {
 
-typedef std::vector<mtac::Argument> arguments;
+using arguments = std::vector<mtac::Argument>;
 
 /* Assignments (left_value = value) */
 
 void assign(mtac::Function& function, ast::Value& left_value, ast::Value& value);
-void assign(mtac::Function& function, std::shared_ptr<Variable> left_value, ast::Value& value);
+void assign(mtac::Function& function, const std::shared_ptr<Variable>& left_value, ast::Value& value);
 
 /* Compiles Values in Arguments (use ToArgumentsVisitor) */
 
@@ -54,7 +54,7 @@ void pass_arguments(mtac::Function& function, eddic::Function& definition, std::
 
 arguments compile_ternary(mtac::Function& function, ast::Ternary& ternary);
 
-mtac::Argument index_of_array(std::shared_ptr<Variable> array, ast::Value indexValue, mtac::Function& function){
+mtac::Argument index_of_array(const std::shared_ptr<Variable>& array, ast::Value indexValue, mtac::Function& function) {
     auto index = moveToArgument(indexValue, function);
 
     auto temp = function.context->new_temporary(INT);
@@ -68,15 +68,17 @@ mtac::Argument index_of_array(std::shared_ptr<Variable> array, ast::Value indexV
 std::vector<std::shared_ptr<const Type>> to_types(std::vector<ast::Value>& values){
     std::vector<std::shared_ptr<const Type>> types;
 
-    for(auto& value : values){
+    types.reserve(values.size());
+    for (auto& value : values) {
         types.push_back(visit(ast::GetTypeVisitor(), value));
     }
 
     return types;
 }
 
-void construct(mtac::Function& function, std::shared_ptr<const Type> type, std::vector<ast::Value> values, mtac::Argument this_arg){
-    auto ctor_name = mangle_ctor(to_types(values), type);
+void construct(mtac::Function& function, std::shared_ptr<const Type> type, std::vector<ast::Value> values,
+               const mtac::Argument& this_arg) {
+    auto ctor_name = mangle_ctor(to_types(values), std::move(type));
     auto global_context = function.context->global();
 
     //Get the constructor
@@ -93,8 +95,9 @@ void construct(mtac::Function& function, std::shared_ptr<const Type> type, std::
     function.emplace_back(mtac::Operator::CALL, ctor_function);
 }
 
-void copy_construct(mtac::Function& function, std::shared_ptr<const Type> type, mtac::Argument this_arg, ast::Value rhs_arg){
-    std::vector<std::shared_ptr<const Type>> ctor_types = {new_pointer_type(type)};
+void copy_construct(mtac::Function& function, const std::shared_ptr<const Type>& type, const mtac::Argument& this_arg,
+                    const ast::Value& rhs_arg) {
+    const std::vector<std::shared_ptr<const Type>> ctor_types = {new_pointer_type(type)};
     auto ctor_name = mangle_ctor(ctor_types, type);
 
     auto global_context = function.context->global();
@@ -115,9 +118,9 @@ void copy_construct(mtac::Function& function, std::shared_ptr<const Type> type, 
     function.emplace_back(mtac::Operator::CALL, ctor_function);
 }
 
-void destruct(mtac::Function& function, std::shared_ptr<const Type> type, mtac::Argument this_arg){
+void destruct(mtac::Function& function, std::shared_ptr<const Type> type, const mtac::Argument& this_arg) {
     auto global_context = function.context->global();
-    auto dtor_name = mangle_dtor(type);
+    auto dtor_name = mangle_dtor(std::move(type));
 
     cpp_assert(global_context->exists(dtor_name), "The destructor must exists");
 
@@ -132,7 +135,8 @@ template<typename Source>
 Offset variant_cast(Source source){
     if(auto* ptr = boost::get<int>(&source)){
         return *ptr;
-    } else if(auto* ptr = boost::get<std::shared_ptr<Variable>>(&source)){
+    }
+    if (auto* ptr = boost::get<std::shared_ptr<Variable>>(&source)) {
         return *ptr;
     } else {
         cpp_unreachable("Invalid source type");
@@ -149,7 +153,8 @@ void jump_if_false(mtac::Function& function, const std::string& l, ast::Value va
     function.emplace_back(mtac::Operator::IF_FALSE_UNARY, argument, l);
 }
 
-arguments struct_to_arguments(mtac::Function& function, std::shared_ptr<const Type> type, std::shared_ptr<Variable> base_var, unsigned int offset);
+arguments struct_to_arguments(mtac::Function& function, const std::shared_ptr<const Type>& type,
+                              const std::shared_ptr<Variable>& base_var, unsigned int offset);
 
 enum class ArgumentType : unsigned int {
     NORMAL,
@@ -169,50 +174,55 @@ arguments get_member(mtac::Function& function, unsigned int offset, std::shared_
         function.emplace_back(t2, var, mtac::Operator::DOT, static_cast<int>(offset + INT->size(platform)));
 
         return {t1, t2};
-    } else if(member_type->is_array() && !member_type->is_dynamic_array()){
-        //Get a reference to the array
-        if(T == ArgumentType::REFERENCE){
+    }
+    if (member_type->is_array() && !member_type->is_dynamic_array()) {
+        // Get a reference to the array
+        if (T == ArgumentType::REFERENCE) {
             return {function.context->new_reference(member_type, var, offset)};
         }
-        //Get all the values of an array
+        // Get all the values of an array
         else {
             auto elements = member_type->elements();
             auto data_type = member_type->data_type();
 
             arguments result;
 
-            //All the elements of the array
-            for(unsigned int i = 0; i < elements; ++i){
+            // All the elements of the array
+            for (unsigned int i = 0; i < elements; ++i) {
                 auto index_offset = offset + i * data_type->size(platform);
 
-                if(data_type == STRING){
+                if (data_type == STRING) {
                     auto t1 = function.context->new_temporary(INT);
                     auto t2 = function.context->new_temporary(INT);
 
                     function.emplace_back(t1, var, mtac::Operator::DOT, static_cast<int>(index_offset));
-                    function.emplace_back(t2, var, mtac::Operator::DOT, static_cast<int>(index_offset + INT->size(function.context->global()->target_platform())));
+                    function.emplace_back(
+                        t2, var, mtac::Operator::DOT,
+                        static_cast<int>(index_offset + INT->size(function.context->global()->target_platform())));
 
                     result.push_back(t1);
                     result.push_back(t2);
-                } else if(data_type->is_custom_type()){
+                } else if (data_type->is_custom_type()) {
                     auto base_var = function.context->new_reference(member_type, var, offset);
 
                     auto struct_type = function.context->global()->get_struct(data_type);
 
-                    for(auto& member : struct_type->members){
+                    for (auto& member : struct_type->members) {
                         std::shared_ptr<const Type> member_type;
                         unsigned int offset = 0;
-                        boost::tie(offset, member_type) = mtac::compute_member(function.context->global(), base_var->type(), member.name);
+                        boost::tie(offset, member_type) =
+                            mtac::compute_member(function.context->global(), base_var->type(), member.name);
 
                         auto new_args = get_member(function, offset, member_type, base_var);
                         std::copy(new_args.begin(), new_args.end(), std::back_inserter(result));
                     }
-                } else if(data_type == FLOAT || data_type == INT || data_type == CHAR || data_type == BOOL || data_type->is_pointer()){
+                } else if (data_type == FLOAT || data_type == INT || data_type == CHAR || data_type == BOOL ||
+                           data_type->is_pointer()) {
                     auto temp = function.context->new_temporary(data_type);
 
-                    if(data_type == FLOAT){
+                    if (data_type == FLOAT) {
                         function.emplace_back(temp, var, mtac::Operator::FDOT, static_cast<int>(index_offset));
-                    } else if(data_type == INT || data_type == CHAR || data_type == BOOL || data_type->is_pointer()){
+                    } else if (data_type == INT || data_type == CHAR || data_type == BOOL || data_type->is_pointer()) {
                         function.emplace_back(temp, var, mtac::Operator::DOT, static_cast<int>(index_offset));
                     }
 
@@ -222,35 +232,35 @@ arguments get_member(mtac::Function& function, unsigned int offset, std::shared_
                 }
             }
 
-            //The number of elements
+            // The number of elements
             result.push_back(static_cast<int>(elements));
 
             return result;
         }
-    } else if(member_type->is_structure()){
-        if(T == ArgumentType::REFERENCE){
+    } else if (member_type->is_structure()) {
+        if (T == ArgumentType::REFERENCE) {
             return {function.context->new_reference(member_type, var, offset)};
-        } else if(T == ArgumentType::NORMAL){
+        } else if (T == ArgumentType::NORMAL) {
             return struct_to_arguments(function, member_type, var, offset);
         }
 
         cpp_unreachable("Unhandled ArgumentType");
     } else {
         std::shared_ptr<Variable> temp;
-        if(T == ArgumentType::REFERENCE){
+        if (T == ArgumentType::REFERENCE) {
             temp = function.context->new_reference(member_type, var, offset);
         } else {
             temp = function.context->new_temporary(member_type);
         }
 
-        if(member_type == FLOAT){
+        if (member_type == FLOAT) {
             function.emplace_back(temp, var, mtac::Operator::FDOT, static_cast<int>(offset));
-        } else if(member_type == INT || member_type->is_pointer() || member_type->is_dynamic_array()){
+        } else if (member_type == INT || member_type->is_pointer() || member_type->is_dynamic_array()) {
             function.emplace_back(temp, var, mtac::Operator::DOT, static_cast<int>(offset));
-        } else if(member_type == CHAR || member_type == BOOL){
+        } else if (member_type == CHAR || member_type == BOOL) {
             function.emplace_back(temp, var, mtac::Operator::DOT, static_cast<int>(offset), tac::Size::BYTE);
-        } else if(member_type->is_custom_type() && T == ArgumentType::REFERENCE){
-            //In this case, the reference is not initialized, will be used to refer to the member
+        } else if (member_type->is_custom_type() && T == ArgumentType::REFERENCE) {
+            // In this case, the reference is not initialized, will be used to refer to the member
         } else {
             cpp_unreachable("Unhandled type");
         }
@@ -259,7 +269,8 @@ arguments get_member(mtac::Function& function, unsigned int offset, std::shared_
     }
 }
 
-arguments struct_to_arguments(mtac::Function& function, std::shared_ptr<const Type> type, std::shared_ptr<Variable> base_var, unsigned int offset){
+arguments struct_to_arguments(mtac::Function& function, const std::shared_ptr<const Type>& type,
+                              const std::shared_ptr<Variable>& base_var, unsigned int offset) {
     arguments result;
 
     auto struct_type = function.context->global()->get_struct(type);
@@ -516,10 +527,10 @@ arguments compute_expression_operation(mtac::Function& function, std::shared_ptr
                     auto t1 = function.context->new_temporary(type->is_pointer() ? type : new_pointer_type(type));
 
                     if(type->is_pointer()){
-                        function.emplace_back(t1, left_value, mtac::Operator::ADD, static_cast<int>(offset));
+                        function.emplace_back(t1, left_value, mtac::Operator::ADD, offset);
                     } else {
                         function.emplace_back(t1, left_value, mtac::Operator::PASSIGN);
-                        function.emplace_back(t1, t1, mtac::Operator::ADD, static_cast<int>(offset));
+                        function.emplace_back(t1, t1, mtac::Operator::ADD, offset);
                     }
 
                     left_value = t1;
@@ -632,12 +643,12 @@ arguments compute_expression_operation(mtac::Function& function, std::shared_ptr
 }
 
 //Indicate if a postfix operator needs a pointer as left value
-bool need_pointer(ast::Operator op, std::shared_ptr<const Type> left_type){
+bool need_pointer(ast::Operator op, const std::shared_ptr<const Type>& left_type) {
     return (op == ast::Operator::CALL && !left_type->is_pointer());
 }
 
 //Indicate if a postfix operator needs a reference as left value
-bool need_reference(ast::Operator op, std::shared_ptr<const Type> left_type){
+bool need_reference(ast::Operator op, const std::shared_ptr<const Type>& left_type) {
     return
             op == ast::Operator::INC || op == ast::Operator::DEC    //Modifies the left value, needs a reference
         ||  op == ast::Operator::BRACKET                            //Needs a reference to the left array
@@ -648,7 +659,7 @@ bool need_reference(ast::Operator op, std::shared_ptr<const Type> left_type){
 
 template<ArgumentType T = ArgumentType::NORMAL>
 struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
-    ToArgumentsVisitor(mtac::Function& f) : function(f) {}
+    explicit ToArgumentsVisitor(mtac::Function& f) : function(f) {}
 
     mtac::Function& function;
 
@@ -732,12 +743,16 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
 
                     if(variable->position().isGlobal()){
                         return {static_cast<int>(variable->type()->elements())};
-                    } else if((variable->position().is_variable() || variable->position().isStack()) && variable->type()->has_elements()){
+                    }
+                    if ((variable->position().is_variable() || variable->position().isStack()) &&
+                        variable->type()->has_elements()) {
                         return {static_cast<int>(variable->type()->elements())};
-                    } else if(variable->type()->is_dynamic_array() || variable->is_reference() || variable->position().isParameter() || variable->position().isStack() || variable->position().is_variable()){
+                    } else if (variable->type()->is_dynamic_array() || variable->is_reference() ||
+                               variable->position().isParameter() || variable->position().isStack() ||
+                               variable->position().is_variable()) {
                         auto t1 = function.context->new_temporary(INT);
 
-                        //The size of the array is at the address pointed by the variable
+                        // The size of the array is at the address pointed by the variable
                         function.emplace_back(t1, variable, mtac::Operator::DOT, 0);
 
                         return {t1};
@@ -767,7 +782,8 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
             function.emplace_back(mtac::Operator::CALL, definition, nullptr, nullptr);
 
             return {};
-        } else if(type == BOOL || type == CHAR || type == INT || type == FLOAT || type->is_pointer()){
+        }
+        if (type == BOOL || type == CHAR || type == INT || type == FLOAT || type->is_pointer()) {
             auto t1 = function.context->new_temporary(type);
 
             pass_arguments(function, definition, call.values);
@@ -775,7 +791,7 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
             function.emplace_back(mtac::Operator::CALL, definition, t1, nullptr);
 
             return {t1};
-        } else if(type == STRING){
+        } else if (type == STRING) {
             auto t1 = function.context->new_temporary(INT);
             auto t2 = function.context->new_temporary(INT);
 
@@ -784,16 +800,16 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
             function.emplace_back(mtac::Operator::CALL, definition, t1, t2);
 
             return {t1, t2};
-        } else if(type->is_custom_type() || type->is_template_type()){
+        } else if (type->is_custom_type() || type->is_template_type()) {
             auto var = function.context->generate_variable("ret_t_", type);
 
-            //Initialize the temporary
+            // Initialize the temporary
             construct(function, type, {}, var);
 
-            //Pass the address of return
+            // Pass the address of return
             function.emplace_back(mtac::Operator::PPARAM, var, definition.context()->getVariable("__ret"), definition);
 
-            //Pass the normal arguments of the function
+            // Pass the normal arguments of the function
             pass_arguments(function, definition, call.values);
 
             function.emplace_back(mtac::Operator::CALL, definition, nullptr, nullptr);
@@ -826,16 +842,17 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
         //If it's a const, we just have to replace it by its constant value
         if(type->is_const()){
             auto val = var->val();
-            auto nc_type = type;//->non_const();
+            const auto& nc_type = type;  //->non_const();
 
             if(nc_type == INT || nc_type == BOOL){
                 return {boost::get<int>(val)};
-            } else if(nc_type == CHAR){
-                //TODO Fix the problem with char variables
+            }
+            if (nc_type == CHAR) {
+                // TODO Fix the problem with char variables
                 return {boost::relaxed_get<char>(val)};
-            } else if(nc_type == FLOAT){
+            } else if (nc_type == FLOAT) {
                 return {boost::get<double>(val)};
-            } else if(nc_type == STRING){
+            } else if (nc_type == STRING) {
                 auto value = boost::get<std::pair<std::string, int>>(val);
 
                 return {value.first, value.second};
@@ -862,34 +879,37 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
         return (*this)(value.var);
     }
 
-    result_type dereference_variable(std::shared_ptr<Variable> variable, std::shared_ptr<const Type> type) const {
+    result_type dereference_variable(std::shared_ptr<Variable> variable,
+                                     const std::shared_ptr<const Type>& type) const {
         if(type == INT){
             auto temp = function.context->new_temporary(type);
 
             function.emplace_back(temp, variable, mtac::Operator::DOT, 0);
 
             return {temp};
-        } else if(type == CHAR || type == BOOL){
+        }
+        if (type == CHAR || type == BOOL) {
             auto temp = function.context->new_temporary(type);
 
             function.emplace_back(temp, variable, mtac::Operator::DOT, 0, tac::Size::BYTE);
 
             return {temp};
-        } else if(type == FLOAT){
+        } else if (type == FLOAT) {
             auto temp = function.context->new_temporary(type);
 
             function.emplace_back(temp, variable, mtac::Operator::FDOT, 0);
 
             return {temp};
-        } else if(type == STRING){
+        } else if (type == STRING) {
             auto t1 = function.context->new_temporary(INT);
             auto t2 = function.context->new_temporary(INT);
 
             function.emplace_back(t1, variable, mtac::Operator::DOT, 0);
-            function.emplace_back(t2, variable, mtac::Operator::DOT, static_cast<int>(INT->size(function.context->global()->target_platform())));
+            function.emplace_back(t2, variable, mtac::Operator::DOT,
+                                  static_cast<int>(INT->size(function.context->global()->target_platform())));
 
             return {t1, t2};
-        } else if(type->is_structure()){
+        } else if (type->is_structure()) {
             return struct_to_arguments(function, type, variable, 0);
         }
 
@@ -912,9 +932,8 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
 
                 if(T == ArgumentType::ADDRESS){
                     return {variable};
-                } else {
-                    return dereference_variable(variable, type->data_type());
                 }
+                return dereference_variable(variable, type->data_type());
             }
 
             case ast::Operator::ADDRESS:
@@ -1043,7 +1062,7 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
     }
 
     result_type operator()(ast::Cast& cast) const {
-        mtac::Argument arg = moveToArgument(cast.value, function);
+        const mtac::Argument arg = moveToArgument(cast.value, function);
 
         auto dest_type = visit_non_variant(ast::GetTypeVisitor(), cast);
         auto src_type = visit(ast::GetTypeVisitor(), cast.value);
@@ -1053,20 +1072,21 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
                 auto t1 = function.context->new_temporary(dest_type);
                 function.emplace_back(t1, arg, mtac::Operator::I2F);
                 return {t1};
-            } else if(dest_type == INT){
+            }
+            if (dest_type == INT) {
                 auto t1 = function.context->new_temporary(dest_type);
-                if(src_type == FLOAT){
+                if (src_type == FLOAT) {
                     function.emplace_back(t1, arg, mtac::Operator::F2I);
-                } else if(src_type == CHAR){
+                } else if (src_type == CHAR) {
                     function.emplace_back(t1, arg, mtac::Operator::ASSIGN);
                 }
                 return {t1};
-            } else if(dest_type == CHAR){
+            } else if (dest_type == CHAR) {
                 auto t1 = function.context->new_temporary(dest_type);
                 function.emplace_back(t1, arg, mtac::Operator::ASSIGN);
                 return {t1};
-            } else if(dest_type->is_pointer() && src_type->is_pointer()){
-                if(dest_type->data_type()->is_structure() && src_type->data_type()->is_structure()){
+            } else if (dest_type->is_pointer() && src_type->is_pointer()) {
+                if (dest_type->data_type()->is_structure() && src_type->data_type()->is_structure()) {
                     auto t1 = function.context->new_temporary(dest_type);
 
                     auto global_context = function.context->global();
@@ -1078,8 +1098,8 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
                     auto parent = src_struct_type->parent_type;
                     int offset = global_context->self_size_of_struct(src_struct_type);
 
-                    while(parent){
-                        if(parent == dest_type->data_type()){
+                    while (parent) {
+                        if (parent == dest_type->data_type()) {
                             is_parent = true;
                             break;
                         }
@@ -1090,7 +1110,7 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
                         offset += global_context->self_size_of_struct(struct_type);
                     }
 
-                    if(is_parent){
+                    if (is_parent) {
                         function.emplace_back(t1, arg, mtac::Operator::ADD, offset);
 
                         return {t1};
@@ -1313,7 +1333,7 @@ void assign(mtac::Function& function, ast::Value& left_value, ast::Value& value)
     visit(visitor, left_value);
 }
 
-void assign(mtac::Function& function, std::shared_ptr<Variable> variable, ast::Value& value){
+void assign(mtac::Function& function, const std::shared_ptr<Variable>& variable, ast::Value& value) {
     ast::VariableValue left_value;
     left_value.var = variable;
     left_value.variableName = variable->name();
@@ -1342,7 +1362,8 @@ arguments compile_ternary(mtac::Function& function, ast::Ternary& ternary){
         function.emplace_back(endLabel, mtac::Operator::LABEL);
 
         return {t1};
-    } else if(type == STRING){
+    }
+    if (type == STRING) {
         auto t1 = function.context->new_temporary(INT);
         auto t2 = function.context->new_temporary(INT);
 
@@ -1380,8 +1401,8 @@ class FunctionCompiler : public boost::static_visitor<> {
         AUTO_IGNORE_ARRAY_DECLARATION()
         AUTO_IGNORE_MEMBER_DECLARATION();
 
-        void issue_destructors(std::shared_ptr<Context> context){
-            for(auto& pair : *context){
+        void issue_destructors(const std::shared_ptr<Context>& context) {
+            for (const auto& pair : *context) {
                 auto var = pair.second;
 
                 if(var->position().isStack() || var->position().is_variable()){
@@ -1396,7 +1417,7 @@ class FunctionCompiler : public boost::static_visitor<> {
 
         void operator()(ast::If& if_){
             if (if_.elseIfs.empty()) {
-                std::string endLabel = newLabel();
+                const std::string endLabel = newLabel();
 
                 jump_if_false(function, endLabel, if_.condition);
 
@@ -1405,7 +1426,7 @@ class FunctionCompiler : public boost::static_visitor<> {
                 issue_destructors(if_.context);
 
                 if (if_.else_) {
-                    std::string elseLabel = newLabel();
+                    const std::string elseLabel = newLabel();
 
                     function.emplace_back(elseLabel, mtac::Operator::GOTO);
 
@@ -1420,7 +1441,7 @@ class FunctionCompiler : public boost::static_visitor<> {
                     function.emplace_back(endLabel, mtac::Operator::LABEL);
                 }
             } else {
-                std::string end = newLabel();
+                const std::string end = newLabel();
                 std::string next = newLabel();
 
                 jump_if_false(function, next, if_.condition);
@@ -1495,7 +1516,7 @@ class FunctionCompiler : public boost::static_visitor<> {
         }
 
         void operator()(ast::DoWhile& while_){
-            std::string startLabel = newLabel();
+            const std::string startLabel = newLabel();
 
             function.emplace_back(startLabel, mtac::Operator::LABEL);
 
@@ -1533,7 +1554,7 @@ class FunctionCompiler : public boost::static_visitor<> {
                 destruct(function, type->data_type(), arg);
             }
 
-            auto free_name = "_F4freePI";
+            const auto* free_name = "_F4freePI";
             auto& free_function = program.context->getFunction(free_name);
 
             function.emplace_back(mtac::Operator::PARAM, arg, "a", free_function);
@@ -1682,8 +1703,9 @@ void pass_arguments(mtac::Function& function, eddic::Function& definition, std::
 
 } //end of anonymous namespace
 
-void mtac::Compiler::compile(ast::SourceFile& source, std::shared_ptr<StringPool>, mtac::Program& program) const {
-    timing_timer timer(source.context->timing(), "mtac_compilation");
+void mtac::Compiler::compile(ast::SourceFile& source, const std::shared_ptr<StringPool>&,
+                             mtac::Program& program) const {
+    const timing_timer timer(source.context->timing(), "mtac_compilation");
 
     program.context = source.context;
 

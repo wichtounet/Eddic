@@ -30,8 +30,8 @@ namespace eddic {
  */
 struct GlobalContext final : public Context {
     public:
-        typedef std::unordered_map<std::string, Function> FunctionMap;
-        typedef std::unordered_map<std::string, std::shared_ptr<Struct>> StructMap;
+        using FunctionMap = std::unordered_map<std::string, Function>;
+        using StructMap = std::unordered_map<std::string, std::shared_ptr<Struct>>;
 
         x3_grammar::global_error_handler error_handler;
 
@@ -40,8 +40,8 @@ struct GlobalContext final : public Context {
 
         Variables getVariables();
 
-        std::shared_ptr<Variable> addVariable(const std::string& a, std::shared_ptr<const Type> type);
-        std::shared_ptr<Variable> addVariable(const std::string& a, std::shared_ptr<const Type> type, ast::Value& value);
+        std::shared_ptr<Variable> addVariable(const std::string& a, std::shared_ptr<const Type> type) override;
+        std::shared_ptr<Variable> addVariable(const std::string& a, std::shared_ptr<const Type> type, ast::Value& value) override;
 
         std::shared_ptr<Variable> generate_variable(const std::string& prefix, std::shared_ptr<const Type> type) override;
 

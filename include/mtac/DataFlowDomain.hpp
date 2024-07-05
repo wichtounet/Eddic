@@ -23,13 +23,11 @@ namespace mtac {
 
 template<typename DomainValues>
 struct Domain {
-    typedef DomainValues Values;
+    using Values = DomainValues;
 
     boost::optional<DomainValues> int_values;
 
-    Domain(){
-        //Nothing to init
-    }
+    Domain() = default;
 
     Domain(DomainValues values) : int_values(values){
         //Nothing to init
@@ -50,13 +48,11 @@ struct Domain {
 
 template<typename Key, typename Value, typename Hasher, typename Equals>
 struct Domain<std::unordered_map<Key, Value, Hasher, Equals>> {
-    typedef std::unordered_map<Key, Value, Hasher, Equals> Values;
+    using Values = std::unordered_map<Key, Value, Hasher, Equals>;
     
     boost::optional<Values> int_values;
 
-    Domain(){
-        //Nothing to init
-    }
+    Domain() = default;
 
     Domain(Values values) : int_values(values){
         //Nothing to init
@@ -143,13 +139,11 @@ struct Domain<std::unordered_map<Key, Value, Hasher, Equals>> {
 
 template<typename Key, typename Hasher, typename Equals>
 struct Domain<std::unordered_set<Key, Hasher, Equals>> {
-    typedef std::unordered_set<Key, Hasher, Equals> Values;
+    using Values = std::unordered_set<Key, Hasher, Equals>;
     
     boost::optional<Values> int_values;
 
-    Domain(){
-        //Nothing to init
-    }
+    Domain() = default;
 
     Domain(Values values) : int_values(values){
         //Nothing to init
