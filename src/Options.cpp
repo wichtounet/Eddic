@@ -132,7 +132,13 @@ std::shared_ptr<Configuration> eddic::parseOptions(int argc, const char* argv[])
                     }
                 } else {
                     value.defined = false;
-                    value.value = "false";
+
+                    if (option.has_default) {
+                        value.value = option.default_value;
+                    } else {
+                        value.value = "false";
+                    }
+
                 }
 
                 configuration->values[name] = value;
