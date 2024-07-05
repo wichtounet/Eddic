@@ -17,10 +17,14 @@ namespace eddic {
 namespace mtac {
 
 template<typename BB>
-class basic_block_base_iterator : public std::iterator<std::bidirectional_iterator_tag, BB> {
-    public:
+struct basic_block_base_iterator {
+    using iterator_category = std::bidirectional_iterator_tag;
+    using value_type = BB;
+    using difference_type = std::ptrdiff_t;
+    using pointer= BB*;
+    using reference = BB&;
+
         basic_block_base_iterator(BB current, BB prev) : current(current), prev(prev) {}
-        basic_block_base_iterator(const basic_block_base_iterator<BB>& it) : current(it.current), prev(it.prev) {}
 
         basic_block_base_iterator<BB>& operator++() {
             prev = current;
