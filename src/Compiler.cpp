@@ -33,7 +33,7 @@
 
 using namespace eddic;
 
-int Compiler::compile(const std::string& file, std::shared_ptr<Configuration> configuration) {
+int Compiler::compile(const std::string& file, const std::shared_ptr<Configuration> & configuration) {
     if(!configuration->option_defined("quiet")){
         std::cout << "Compile " << file << std::endl;
     }
@@ -55,7 +55,7 @@ int Compiler::compile(const std::string& file, std::shared_ptr<Configuration> co
 
     StopWatch timer;
 
-    int code = compile_only(file, platform, configuration);
+    const int code = compile_only(file, platform, configuration);
 
     if(!configuration->option_defined("quiet")){
         std::cout << "Compilation took " << timer.elapsed() << "ms" << std::endl;
@@ -64,7 +64,7 @@ int Compiler::compile(const std::string& file, std::shared_ptr<Configuration> co
     return code;
 }
 
-int Compiler::compile_only(const std::string& file, Platform platform, std::shared_ptr<Configuration> configuration) {
+int Compiler::compile_only(const std::string& file, Platform platform, const std::shared_ptr<Configuration> & configuration) {
     int code = 0;
 
     std::unique_ptr<mtac::Program> program;
@@ -122,7 +122,7 @@ int Compiler::compile_only(const std::string& file, Platform platform, std::shar
     return code;
 }
 
-std::unique_ptr<mtac::Program> Compiler::compile_mtac(const std::string& file, Platform platform, std::shared_ptr<Configuration> configuration, FrontEnd& front_end){
+std::unique_ptr<mtac::Program> Compiler::compile_mtac(const std::string& file, Platform platform, const std::shared_ptr<Configuration> & configuration, FrontEnd& front_end){
     front_end.set_configuration(configuration);
 
     auto program = front_end.compile(file, platform);
@@ -132,7 +132,7 @@ std::unique_ptr<mtac::Program> Compiler::compile_mtac(const std::string& file, P
         mtac::resolve_references(*program);
 
         //Separate into basic blocks
-        mtac::BasicBlockExtractor extractor;
+        const mtac::BasicBlockExtractor extractor;
         extractor.extract(*program);
 
         //If asked by the user, print the Three Address code representation before optimization
@@ -144,7 +144,7 @@ std::unique_ptr<mtac::Program> Compiler::compile_mtac(const std::string& file, P
         mtac::build_call_graph(*program);
 
         //Optimize MTAC
-        mtac::Optimizer optimizer;
+        const mtac::Optimizer optimizer;
         optimizer.optimize(*program, front_end.get_string_pool(), platform, configuration);
 
         //Allocate parameters into registers
@@ -161,7 +161,7 @@ std::unique_ptr<mtac::Program> Compiler::compile_mtac(const std::string& file, P
     return program;
 }
 
-void Compiler::compile_ltac(mtac::Program& program, Platform platform, std::shared_ptr<Configuration> configuration, FrontEnd& front_end){
+void Compiler::compile_ltac(mtac::Program& program, Platform platform, const std::shared_ptr<Configuration> & configuration, FrontEnd& front_end){
     //Compute the definitive reachable flag for functions
     program.cg.compute_reachable();
 

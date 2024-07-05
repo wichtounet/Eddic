@@ -37,7 +37,7 @@ struct Compiler {
      * \param file The file to compile. 
      * \return Return code of the compilation process. Numbers other than 0 indicates an error. 
      */
-    int compile(const std::string& file, std::shared_ptr<Configuration> configuration);
+    int compile(const std::string& file, const std::shared_ptr<Configuration> & configuration);
     
     /*!
      * Compile the given file. The compilation is not timed and the platform is not modified.  
@@ -45,11 +45,11 @@ struct Compiler {
      * \param platform The platform to compile for. 
      * \return Return code of the compilation process. Numbers other than 0 indicates an error. 
      */
-    int compile_only(const std::string& file, Platform platform, std::shared_ptr<Configuration> configuration);
+    int compile_only(const std::string& file, Platform platform, const std::shared_ptr<Configuration> & configuration);
 
-    std::unique_ptr<mtac::Program> compile_mtac(const std::string& file, Platform platform, std::shared_ptr<Configuration> configuration, FrontEnd& front_end);
+    std::unique_ptr<mtac::Program> compile_mtac(const std::string& file, Platform platform, const std::shared_ptr<Configuration> & configuration, FrontEnd& front_end);
     
-    void compile_ltac(mtac::Program& program, Platform platform, std::shared_ptr<Configuration> configuration, FrontEnd& front_end);
+    void compile_ltac(mtac::Program& program, Platform platform, const std::shared_ptr<Configuration> & configuration, FrontEnd& front_end);
 };
 
 } //end of eddic
