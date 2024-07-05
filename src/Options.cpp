@@ -114,19 +114,19 @@ std::shared_ptr<Configuration> eddic::parseOptions(int argc, const char* argv[])
         options.parse_positional("input");
 
         auto& v = const_cast<char**&>(argv);
-        options.parse(argc, v);
+        auto result = options.parse(argc, v);
 
         for(auto& group : options.groups()){
             for(auto& option : options.group_help(group).options){
-                auto name = option.l.empty() ? option.s : option.l;
+                auto name = option.l.empty() ? option.s : option.l.front();
 
                 ConfigValue value;
 
-                if(options.count(name)){
+                if(result.count(name)){
                     value.defined = true;
 
-                    if(option.has_arg){
-                        value.value = options[name].as<std::string>();
+                    if(!option.is_boolean){
+                        value.value = result[name].as<std::string>();
                     } else {
                         value.value = "true";
                     }
@@ -139,26 +139,26 @@ std::shared_ptr<Configuration> eddic::parseOptions(int argc, const char* argv[])
             }
         }
 
-        if(options.count("O0") + options.count("O1") + options.count("O2") > 1){
+        if(result.count("O0") + result.count("O1") + result.count("O2") > 1){
             std::cout << "Invalid command line options : only one optimization level should be set" << std::endl;
 
             return nullptr;
         }
 
-        if(options.count("64") && options.count("32")){
+        if(result.count("64") && result.count("32")){
             std::cout << "Invalid command line options : a compilation cannot be both 32 and 64 bits" << std::endl;
 
             return nullptr;
         }
 
         //Update optimization level based on special switches
-        if(options.count("O0")){
+        if(result.count("O0")){
             configuration->values["Opt"].value = "0";
-        } else if(options.count("O1")){
+        } else if(result.count("O1")){
             configuration->values["Opt"].value = "1";
-        } else if(options.count("O2")){
+        } else if(result.count("O2")){
             configuration->values["Opt"].value = "2";
-        } else if(options.count("O3")){
+        } else if(result.count("O3")){
             configuration->values["Opt"].value = "3";
         }
 
@@ -180,7 +180,7 @@ std::shared_ptr<Configuration> eddic::parseOptions(int argc, const char* argv[])
         if(configuration->option_int_value("Opt") >= 3){
             trigger_childs(configuration, triggers["__3"]);
         }
-    } catch (const cxxopts::OptionException& e) {
+    } catch (const std::exception& e) {
         std::cout << "Invalid command line options: " << e.what() << std::endl;
 
         return nullptr;
