@@ -34,7 +34,7 @@ struct Offset {
 
 std::ostream& operator<<(std::ostream& stream, const Offset& offset);
 
-struct OffsetHash : std::unary_function<Offset, std::size_t> {
+struct OffsetHash {
     std::size_t operator()(const Offset& p) const {
         std::size_t seed = 0;
 
