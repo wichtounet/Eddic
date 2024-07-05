@@ -69,8 +69,8 @@ struct basic_block_base_iterator {
         BB prev;
 };
 
-typedef basic_block_base_iterator<mtac::basic_block_p> basic_block_iterator;
-typedef basic_block_base_iterator<mtac::basic_block_cp> basic_block_const_iterator;
+using basic_block_iterator = basic_block_base_iterator<mtac::basic_block_p>;
+using basic_block_const_iterator = basic_block_base_iterator<mtac::basic_block_cp>;
 
 } //end of mtac
 

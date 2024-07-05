@@ -122,5 +122,5 @@ mtac::VariableUsage mtac::compute_variable_usage_with_depth(mtac::Function& func
         }
     }
 
-    return std::move(usage);
+    return usage;
 }

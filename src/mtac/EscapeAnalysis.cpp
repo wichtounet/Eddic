@@ -42,5 +42,5 @@ mtac::escaped_variables_ptr mtac::escape_analysis(mtac::Function& function){
         }
     }
 
-    return std::move(pointer_escaped);
+    return pointer_escaped;
 }
