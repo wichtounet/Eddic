@@ -13,3 +13,5 @@ debug
 release_debug
 html
 massif.*
+*.plist
+.cache
