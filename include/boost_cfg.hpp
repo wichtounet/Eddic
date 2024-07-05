@@ -12,7 +12,9 @@
 
 namespace boost {
 
-[[noreturn]] inline void throw_exception( const std::exception & ){};
+[[noreturn]] inline void throw_exception( const std::exception & ){
+    std::terminate();
+};
 
 } // namespace boost
 
