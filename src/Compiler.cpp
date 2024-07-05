@@ -35,7 +35,7 @@ using namespace eddic;
 
 int Compiler::compile(const std::string& file, const std::shared_ptr<Configuration> & configuration) {
     if(!configuration->option_defined("quiet")){
-        std::cout << "Compile " << file << std::endl;
+        std::cout << "Compile " << file << '\n';
     }
 
     //32 bits by default
@@ -58,7 +58,7 @@ int Compiler::compile(const std::string& file, const std::shared_ptr<Configurati
     const int code = compile_only(file, platform, configuration);
 
     if(!configuration->option_defined("quiet")){
-        std::cout << "Compilation took " << timer.elapsed() << "ms" << std::endl;
+        std::cout << "Compilation took " << timer.elapsed() << "ms" << '\n';
     }
 
     return code;
@@ -107,10 +107,10 @@ int Compiler::compile_only(const std::string& file, Platform platform, const std
 
     //Display stats if necessary
     if(program && configuration->option_defined("stats")){
-        std::cout << "Statistics" << std::endl;
+        std::cout << "Statistics" << '\n';
 
         for(const auto& counter : program->context->stats()){
-            std::cout << "\t" << counter.first << ":" << counter.second << std::endl;
+            std::cout << "\t" << counter.first << ":" << counter.second << '\n';
         }
     }
 
@@ -137,7 +137,7 @@ std::unique_ptr<mtac::Program> Compiler::compile_mtac(const std::string& file, P
 
         //If asked by the user, print the Three Address code representation before optimization
         if(configuration->option_defined("mtac-opt")){
-            std::cout << *program << std::endl;
+            std::cout << *program << '\n';
         }
 
         //Build the call graph (will be used for each optimization level)
@@ -154,7 +154,7 @@ std::unique_ptr<mtac::Program> Compiler::compile_mtac(const std::string& file, P
 
         //If asked by the user, print the Three Address code representation
         if(configuration->option_defined("mtac") || configuration->option_defined("mtac-only")){
-            std::cout << *program << std::endl;
+            std::cout << *program << '\n';
         }
     }
 
