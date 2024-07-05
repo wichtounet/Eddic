@@ -26,7 +26,7 @@ void ast::StructureInheritancePass::apply_program(ast::SourceFile& program, bool
         auto start_size = resolved_structures.size();
         std::size_t structures = 0;
 
-        for(auto& block : program.blocks){
+        for(auto& block : program){
             if(auto* ptr = boost::get<ast::struct_definition>(&block)){
                 if(ptr->is_template_declaration()){
                     continue;

@@ -66,7 +66,7 @@ void apply_pass(std::shared_ptr<ast::Pass> pass, ast::SourceFile& program, std::
 
         bool valid = true;
 
-        for(auto& block : program.blocks){
+        for(auto& block : program){
             try {
                 if(auto* ptr = boost::get<ast::TemplateFunctionDeclaration>(&block)){
                     if(!ptr->is_template()){
@@ -180,7 +180,7 @@ void ast::PassManager::function_instantiated(ast::TemplateFunctionDeclaration& f
             if(context.empty()){
                 pass->apply_function(function);
             } else {
-                for(auto& block : program_.blocks){
+                for(auto& block : program_){
                     if(auto* struct_type = boost::get<ast::struct_definition>(&block)){
                         if(!struct_type->is_template_declaration() && struct_type->struct_type->mangle() == context){
                             pass->apply_struct(*struct_type, true);
@@ -262,7 +262,7 @@ void ast::PassManager::run_passes(){
             //Add the instantiated class and function templates to the actual program
 
             for(auto& struct_ : class_instantiated){
-                program_.blocks.emplace_back(struct_);
+                program_.emplace_back(struct_);
             }
 
             for(auto& function_pair : functions_instantiated){
@@ -270,9 +270,9 @@ void ast::PassManager::run_passes(){
                 auto& function = function_pair.second;
 
                 if(context.empty()){
-                    program_.blocks.emplace_back(function);
+                    program_.emplace_back(function);
                 } else {
-                    for(auto& block : program_.blocks){
+                    for(auto& block : program_){
                         if(auto* struct_type = boost::get<ast::struct_definition>(&block)){
                             if(!struct_type->is_template_declaration() && struct_type->struct_type->mangle() == context){
                                 struct_type->blocks.emplace_back(function);

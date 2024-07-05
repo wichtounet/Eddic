@@ -51,7 +51,7 @@ class DependencyVisitor : public boost::static_visitor<> {
             if(parser.parse(headerFile, dependency, source_program.context)){
                 (*this)(dependency);
 
-                for(ast::SourceFileBlock& block : dependency.blocks){
+                for(ast::SourceFileBlock& block : dependency){
                     if(auto* ptr = boost::get<ast::TemplateFunctionDeclaration>(&block)){
                         if(!ptr->is_template()){
                             ptr->standard = true;
@@ -80,7 +80,7 @@ class DependencyVisitor : public boost::static_visitor<> {
             if(parser.parse(file, dependency, source_program.context)){
                 (*this)(dependency);
 
-                for(ast::SourceFileBlock& block : dependency.blocks){
+                for(ast::SourceFileBlock& block : dependency){
                     if(auto* ptr = boost::get<ast::TemplateFunctionDeclaration>(&block)){
                         if(!ptr->is_template()){
                             ptr->header = import.file;
@@ -104,9 +104,9 @@ void ast::resolveDependencies(ast::SourceFile& program, parser_x3::SpiritParser&
     DependencyVisitor visitor(parser, program);
     visitor(program);
 
-    program.blocks.reserve(program.blocks.size() + visitor.blocks.size());
+    program.reserve(program.size() + visitor.blocks.size());
 
     for(auto& block : visitor.blocks){
-       program.blocks.emplace_back(std::move(block));
+       program.emplace_back(std::move(block));
     }
 }

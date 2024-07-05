@@ -100,7 +100,7 @@ struct DebugVisitor : public boost::static_visitor<> {
     }
 
     void operator()(ast::SourceFile& program) const {
-        print_each_sub(program.blocks, "SourceFile");
+        print_each_sub(program, "SourceFile");
     }
 
     void operator()(ast::Import& import) const {

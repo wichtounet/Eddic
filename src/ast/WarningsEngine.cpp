@@ -141,11 +141,11 @@ struct Inspector : public boost::static_visitor<> {
         void operator()(ast::SourceFile& program){
             check(program.context);
 
-            visit_each(*this, program.blocks);
+            visit_each(*this, program);
         }
 
         void check_header(const std::string& file, const x3::file_position_tagged& position){
-            for(auto& block : program.blocks){
+            for(auto& block : program){
                 if(auto* ptr = boost::get<ast::struct_definition>(&block)){
                     if(!ptr->is_template_declaration() && ptr->header == file){
                         auto struct_ = context->get_struct(ptr->struct_type->mangle());

@@ -815,7 +815,7 @@ void ast::TemplateEngine::check_function(std::vector<ast::Type>& template_types,
     }
 
     if(context.empty()){
-        for(auto& block : pass_manager.program().blocks){
+        for(auto& block : pass_manager.program()){
             if(auto* ptr = boost::get<ast::TemplateFunctionDeclaration>(&block)){
                 auto& function = *ptr;
 
@@ -837,7 +837,7 @@ void ast::TemplateEngine::check_function(std::vector<ast::Type>& template_types,
             }
         }
     } else {
-        for(auto& block : pass_manager.program().blocks){
+        for(auto& block : pass_manager.program()){
             if(auto* ptr = boost::get<ast::struct_definition>(&block)){
                 auto& struct_ = *ptr;
 

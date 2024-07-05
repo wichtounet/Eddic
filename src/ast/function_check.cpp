@@ -247,7 +247,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
         void operator()(ast::SourceFile& program){
             context = program.context;
 
-            visit_each(*this, program.blocks);
+            visit_each(*this, program);
         }
 
         std::vector<std::shared_ptr<const Type>> get_types(std::vector<ast::Value>& values){
@@ -670,7 +670,7 @@ void ast::FunctionCheckPass::apply_program(ast::SourceFile& program, bool indica
         FunctionCheckerVisitor visitor(template_engine, "");
         visitor.context = context;
 
-        for(auto& block : program.blocks){
+        for(auto& block : program){
             if(auto* ptr = boost::smart_get<ast::GlobalArrayDeclaration>(&block)){
                 visit_non_variant(visitor, *ptr);
             } else if(auto* ptr = boost::smart_get<ast::GlobalVariableDeclaration>(&block)){

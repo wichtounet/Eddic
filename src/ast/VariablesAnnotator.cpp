@@ -150,7 +150,7 @@ void ast::VariableAnnotationPass::apply_program(ast::SourceFile& program, bool i
     if(!indicator){
         VariablesVisitor visitor(context, template_engine);
 
-        for(auto& block : program.blocks){
+        for(auto& block : program){
             if(auto* ptr = boost::get<ast::GlobalArrayDeclaration>(&block)){
                 visit_non_variant(visitor, *ptr);
             } else if(auto* ptr = boost::get<ast::GlobalVariableDeclaration>(&block)){

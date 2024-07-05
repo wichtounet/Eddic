@@ -98,7 +98,7 @@ void ast::DefaultValuesPass::apply_program(ast::SourceFile& program, bool indica
     if(!indicator){
         SetDefaultValues visitor;
 
-        for(auto& block : program.blocks){
+        for(auto& block : program){
             if(auto* ptr = boost::get<ast::GlobalArrayDeclaration>(&block)){
                 visit_non_variant(visitor, *ptr);
             } else if(auto* ptr = boost::get<ast::GlobalVariableDeclaration>(&block)){

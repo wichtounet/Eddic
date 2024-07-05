@@ -401,7 +401,7 @@ void ast::TypeCheckingPass::apply_program(ast::SourceFile& program, bool){
 
     bool valid = true;
 
-    for(auto& block : program.blocks){
+    for(auto& block : program){
         try {
             visit(visitor, block);
         } catch (const SemanticalException& e){

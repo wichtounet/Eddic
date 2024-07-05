@@ -14,7 +14,7 @@
 
 #define AUTO_RECURSE_PROGRAM()\
 void operator()(ast::SourceFile& program){\
-    visit_each(*this, program.blocks);\
+    visit_each(*this, program);\
 }
 
 /* Functions */

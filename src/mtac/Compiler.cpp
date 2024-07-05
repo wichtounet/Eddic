@@ -1687,7 +1687,7 @@ void mtac::Compiler::compile(ast::SourceFile& source, std::shared_ptr<StringPool
 
     program.context = source.context;
 
-    for(auto& block : source.blocks){
+    for(auto& block : source){
         if(auto* ptr = boost::get<ast::TemplateFunctionDeclaration>(&block)){
             if(!ptr->is_template()){
                 program.functions.emplace_back(ptr->context, ptr->mangledName, program.context->getFunction(ptr->mangledName));
