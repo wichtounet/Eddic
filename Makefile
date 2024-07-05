@@ -16,6 +16,9 @@ ifeq (,$(EDDIC_COVERAGE))
 $(eval $(call enable_coverage))
 endif
 
+# Use C++23
+$(eval $(call use_cpp23))
+
 # Compile the sources files
 
 $(eval $(call auto_folder_compile,src))
