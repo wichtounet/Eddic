@@ -38,3 +38,11 @@ jobs:
       env:
           CXX: ${{ matrix.compiler }}
       run: make -j5 release_debug
+
+    - name: Build tests
+      env:
+          CXX: ${{ matrix.compiler }}
+      run: make -j5 ./release_debug/bin/test
+
+    - name: Run tests
+      run: ./release_debug/bin/test
