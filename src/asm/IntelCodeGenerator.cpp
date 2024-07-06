@@ -60,11 +60,8 @@ void as::IntelCodeGenerator::addGlobalVariables(StringPool& pool, FloatPool& flo
             if (type == INT) {
                 declareIntVariable(it.second->position().name(), boost::get<int>(it.second->val()));
             } else if(type == STRING) {
+                // Note: The string can be empty since "" is a valid value
                 auto value = boost::get<std::pair<std::string, int>>(it.second->val());
-
-                //If that's not the case, there is a problem with the pool
-                assert(value.first.size() > 0);
-
                 declareStringVariable(it.second->position().name(), pool.label(value.first), value.second);
             } else if(type == CHAR){
                 //TODO Normally a strict get should be enough here,
