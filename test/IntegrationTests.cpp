@@ -174,28 +174,20 @@ void validate(const std::string& file, T... arguments){
     validate_output(file, "--64", "--O3", file + ".6.out", arguments...);
 }
 
-void assert_output_equals(const std::string& file, const std::string& output, const std::string& param1, const std::string& param2, const std::string& param3){
-    auto out = get_output(file, param1, param2, param3);
-
-    BOOST_CHECK_EQUAL (output, out);
+#define assert_output_equals(file, output, param1, param2, param3) \
+{\
+    auto out = get_output(file, param1, param2, param3);\
+    BOOST_CHECK_EQUAL (output, out);\
 }
 
-void assert_output_32(const std::string& file, const std::string& output){
-    assert_output_equals(file, output, "--32", "--O0", file + ".1.out");
-    assert_output_equals(file, output, "--32", "--O1", file + ".2.out");
-    assert_output_equals(file, output, "--32", "--O3", file + ".3.out");
-}
 
-void assert_output_64(const std::string& file, const std::string& output){
-    assert_output_equals(file, output, "--64", "--O0", file + ".4.out");
-    assert_output_equals(file, output, "--64", "--O1", file + ".5.out");
-    assert_output_equals(file, output, "--64", "--O3", file + ".6.out");
-}
-
-void assert_output(const std::string& file, const std::string& output){
-    assert_output_32(file, output);
-    assert_output_64(file, output);
-}
+#define assert_output(file, output) \
+    assert_output_equals(file, output, "--32", "--O0", file ".1.out"); \
+    assert_output_equals(file, output, "--32", "--O1", file ".2.out"); \
+    assert_output_equals(file, output, "--32", "--O3", file ".3.out"); \
+    assert_output_equals(file, output, "--64", "--O0", file ".4.out"); \
+    assert_output_equals(file, output, "--64", "--O1", file ".5.out"); \
+    assert_output_equals(file, output, "--64", "--O3", file ".6.out")
 
 /* Compiles all the applications */
 
