@@ -83,7 +83,7 @@ int Compiler::compile_only(const std::string& file, Platform platform, const std
 
         program = compile_mtac(file, platform, configuration, *front_end);
 
-        //If program is null, it means that the user didn't wanted it
+        //If program is null, it means that the user didn't want it
         if(program){
             mtac::collect_warnings(*program, configuration);
 

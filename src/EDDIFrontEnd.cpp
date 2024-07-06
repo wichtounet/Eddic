@@ -63,7 +63,7 @@ std::unique_ptr<mtac::Program> EDDIFrontEnd::compile(const std::string& file, Pl
             return nullptr;
         }
 
-        std::unique_ptr<mtac::Program> program(new mtac::Program());
+        auto program = std::make_unique<mtac::Program>();
 
         //Generate Three-Address-Code language
         mtac::Compiler compiler;

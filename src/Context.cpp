@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <utility>
 
 #include "cpp_utils/assert.hpp"
 
@@ -18,8 +19,8 @@
 
 using namespace eddic;
 
-Context::Context(std::shared_ptr<Context> parent) : m_parent(parent) {}
-Context::Context(std::shared_ptr<Context> parent, std::shared_ptr<GlobalContext> global_context) : m_parent(parent), global_context(global_context) {}
+Context::Context(std::shared_ptr<Context> parent) : m_parent(std::move(parent)) {}
+Context::Context(std::shared_ptr<Context> parent, std::shared_ptr<GlobalContext> global_context) : m_parent(std::move(parent)), global_context(std::move(global_context)) {}
 
 std::shared_ptr<Context> Context::parent() const  {
     return m_parent;
