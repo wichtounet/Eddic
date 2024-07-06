@@ -37,7 +37,7 @@ jobs:
     - name: Build binaries
       env:
           CXX: ${{ matrix.compiler }}
-      run: make -j5 release_debug
+      run: make -j5 ./release_debug/bin/eddic
 
     - name: Build tests
       env:
