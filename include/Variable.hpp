@@ -23,8 +23,8 @@ namespace eddic {
 class Type;
 class Variable;
 
-typedef boost::variant<int, double, bool, std::pair<std::string, int>> Val;
-typedef boost::variant<int, std::shared_ptr<Variable>> Offset;
+using VariableValue = boost::variant<int, double, std::pair<std::string, int>>;
+using Offset = boost::variant<int, std::shared_ptr<Variable>>;
 
 /*!
  * \class Variable
@@ -39,7 +39,7 @@ class Variable {
 
         Position m_position;
         x3::file_position_tagged m_source_position;
-        Val v_value;
+        VariableValue v_value;
 
         //For temporary references
         std::shared_ptr<Variable> m_reference = nullptr;
@@ -47,12 +47,11 @@ class Variable {
 
     public:
         Variable(std::string name, std::shared_ptr<const Type> type, Position position);
-        Variable(std::string name, std::shared_ptr<const Type> type, Position position, Val value);
+        Variable(std::string name, std::shared_ptr<const Type> type, Position position, VariableValue value);
         Variable(std::string name, std::shared_ptr<const Type> type, std::shared_ptr<Variable> reference, Offset offset);
 
         //TODO Find out why cannot be noexcept
         Variable(Variable&& rhs) = default;
-        Variable& operator=(Variable&& rhs) = default;
 
         std::size_t references() const;
         void add_reference();
@@ -61,7 +60,7 @@ class Variable {
         std::shared_ptr<const Type> type() const ;
         Position position() const ;
 
-        Val val() const ;
+        VariableValue val() const ;
 
         const x3::file_position_tagged& source_position() const ;
         void set_source_position(const x3::file_position_tagged& position);

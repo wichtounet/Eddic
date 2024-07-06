@@ -24,11 +24,9 @@
 #include "ast/Boolean.hpp"
 #include "ast/Null.hpp"
 
-namespace eddic {
+namespace eddic::ast {
 
-namespace ast {
-
-typedef x3::variant<
+using Value = x3::variant<
             Integer,
             IntegerSuffix,
             Float,
@@ -46,11 +44,9 @@ typedef x3::variant<
             x3::forward_ast<Ternary>,
             New,
             x3::forward_ast<NewArray>
-        > Value;
+        >;
 
-} //end of ast
-
-} //end of eddic
+} // namespace eddic::ast
 
 // Recursive but not forwarded
 #include "ast/BuiltinOperator.hpp"

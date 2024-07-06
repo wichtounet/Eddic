@@ -34,9 +34,9 @@ struct GlobalVariableDeclaration : x3::file_position_tagged {
 
 };
 
-} //end of ast
+} // namespace ast
 
-} //end of eddic
+} // namespace eddic
 
 //Adapt the struct for the AST
 BOOST_FUSION_ADAPT_STRUCT(

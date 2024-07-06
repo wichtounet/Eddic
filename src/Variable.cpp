@@ -14,7 +14,7 @@ using namespace eddic;
 Variable::Variable(std::string name, std::shared_ptr<const Type> type, Position position)
     : m_name(std::move(name)), m_type(std::move(type)), m_position(std::move(position)) {}
 
-Variable::Variable(std::string name, std::shared_ptr<const Type> type, Position position, Val value)
+Variable::Variable(std::string name, std::shared_ptr<const Type> type, Position position, VariableValue value)
     : m_name(std::move(name)), m_type(std::move(type)), m_position(std::move(position)), v_value(std::move(value)) {}
 
 Variable::Variable(std::string name, std::shared_ptr<const Type> type, std::shared_ptr<Variable> reference, Offset offset)
@@ -32,7 +32,7 @@ Position Variable::position() const {
     return m_position;
 }
 
-Val Variable::val() const {
+VariableValue Variable::val() const {
     return v_value;
 }
 

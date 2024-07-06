@@ -842,33 +842,40 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
         //If it's a const, we just have to replace it by its constant value
         if(type->is_const()){
             auto val = var->val();
-            const auto& nc_type = type;  //->non_const();
+            const auto& nc_type = type;
 
-            if(nc_type == INT || nc_type == BOOL){
+            if(nc_type == INT || nc_type == BOOL || nc_type == CHAR){
                 return {boost::get<int>(val)};
             }
-            if (nc_type == CHAR) {
-                // TODO Fix the problem with char variables
-                return {boost::relaxed_get<char>(val)};
-            } else if (nc_type == FLOAT) {
-                return {boost::get<double>(val)};
-            } else if (nc_type == STRING) {
-                auto value = boost::get<std::pair<std::string, int>>(val);
 
+            if (nc_type == FLOAT) {
+                return {boost::get<double>(val)};
+            }
+
+            if (nc_type == STRING) {
+                auto value = boost::get<std::pair<std::string, int>>(val);
                 return {value.first, value.second};
             }
 
             cpp_unreachable("void is not a type");
-        } else if(type->is_array() || type->is_pointer()){
+        } 
+
+        if(type->is_array() || type->is_pointer()){
             return {var};
-        } else  if(type == INT || type == CHAR || type == BOOL || type == FLOAT){
+        } 
+
+        if(type == INT || type == CHAR || type == BOOL || type == FLOAT){
             return {var};
-        } else if(type == STRING){
+        } 
+
+        if(type == STRING){
             auto temp = function.context->new_temporary(INT);
             function.emplace_back(temp, var, mtac::Operator::DOT, static_cast<int>(INT->size(function.context->global()->target_platform())));
 
             return {var, temp};
-        } else if(type->is_structure()) {
+        } 
+
+        if(type->is_structure()) {
             return struct_to_arguments(function, type, var, 0);
         }
 

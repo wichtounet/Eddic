@@ -20,7 +20,7 @@
 
 namespace eddic {
 
-typedef boost::variant<int, double, bool, std::pair<std::string, int>> Val;
+using Val = boost::variant<int, double, bool, std::pair<std::string, int>>;
 
 namespace ast {
 

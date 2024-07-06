@@ -40,8 +40,9 @@ void as::IntelCodeGenerator::generate(StringPool& pool, FloatPool& float_pool){
 void as::IntelCodeGenerator::addGlobalVariables(StringPool& pool, FloatPool& float_pool){
     defineDataSection();
 
-    for(auto& it : context->getVariables()){
-        auto type = it.second->type();
+    for(const auto& it : context->getVariables()){
+        const auto & variable = it.second; 
+        const auto & type = variable->type();
 
         //The const variables are not stored
         if(type->is_const()){
@@ -50,25 +51,25 @@ void as::IntelCodeGenerator::addGlobalVariables(StringPool& pool, FloatPool& flo
 
         if(type->is_array()){
             if(type->data_type() == INT || type->data_type()->is_pointer()){
-                declareIntArray(it.second->name(), type->elements());
+                declareIntArray(variable->name(), type->elements());
             } else if(type->data_type() == FLOAT){
-                declareFloatArray(it.second->name(), type->elements());
+                declareFloatArray(variable->name(), type->elements());
             } else if(type->data_type() == STRING){
-                declareStringArray(it.second->name(), type->elements());
+                declareStringArray(variable->name(), type->elements());
             }
         } else {
             if (type == INT) {
-                declareIntVariable(it.second->position().name(), boost::get<int>(it.second->val()));
+                declareIntVariable(variable->position().name(), boost::get<int>(variable->val()));
             } else if(type == STRING) {
                 // Note: The string can be empty since "" is a valid value
-                auto value = boost::get<std::pair<std::string, int>>(it.second->val());
-                declareStringVariable(it.second->position().name(), pool.label(value.first), value.second);
+                auto value = boost::get<std::pair<std::string, int>>(variable->val());
+                declareStringVariable(variable->position().name(), pool.label(value.first), value.second);
             } else if(type == CHAR){
-                //TODO Normally a strict get should be enough here,
-                //there seems to be a problem with global char var
-                declareCharVariable(it.second->position().name(), boost::relaxed_get<char>(it.second->val()));
+                // char is stored as int
+                declareCharVariable(variable->position().name(), boost::get<int>(variable->val()));
             } else if(type == BOOL){
-                declareBoolVariable(it.second->position().name(), boost::get<bool>(it.second->val()));
+                // bool is stored as int
+                declareBoolVariable(variable->position().name(), boost::get<int>(variable->val()));
             } else {
                 cpp_unreachable("Unhandled type");
             }
