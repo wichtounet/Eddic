@@ -12,7 +12,7 @@ CXX_FLAGS += -ftemplate-depth-2048 -use-gold -Iinclude -Icxxopts/include -Wno-pa
 LD_FLAGS += -lboost_system
 
 # Enable coverage if enabled for the user
-ifeq (,$(EDDIC_COVERAGE))
+ifeq (1,$(EDDIC_COVERAGE))
 $(eval $(call enable_coverage))
 endif
 
