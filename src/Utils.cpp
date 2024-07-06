@@ -21,12 +21,17 @@ bool eddic::file_exists(const std::string& file){
 std::string eddic::execCommand(const std::string& command) {
     std::stringstream output;
 
-    char buffer[1024];
+    char buffer[512];
 
     FILE* stream = popen(command.c_str(), "r");
 
-    while (fgets(buffer, 1024, stream) != NULL) {
-        output << buffer;
+    while (true) {
+        ssize_t bytes = fread(buffer, 1, sizeof(buffer) - 1, stream);
+        if (bytes > 0) {
+            output << std::string(buffer, bytes);
+        } else {
+            break;
+        }
     }
 
     pclose(stream);
