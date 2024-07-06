@@ -40,7 +40,7 @@ struct SetDefaultValues : public boost::static_visitor<> {
                     declaration.value = ast::Value(integer);
                 } else if(type == STRING){
                     ast::Literal literal;
-                    literal.value = "\"\"";
+                    literal.value = "";
                     literal.label = "S1";
 
                     declaration.value = ast::Value(literal);
