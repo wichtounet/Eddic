@@ -22,7 +22,7 @@ jobs:
         submodules: recursive
 
     - name: Install dependencies
-      run: sudo apt install libboost-all-dev
+      run: sudo apt install nasm libboost-all-dev
 
     - name: Install GCC compiler
       run: sudo apt install g++-14
