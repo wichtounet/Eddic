@@ -10,9 +10,7 @@
 
 #include <ostream>
 
-namespace eddic {
-
-namespace ltac {
+namespace eddic::ltac {
 
 /*!
  * \struct FloatRegister
@@ -26,18 +24,12 @@ struct FloatRegister {
 
     operator int();
 
-    bool operator<(const FloatRegister& rhs) const;
-    bool operator>(const FloatRegister& rhs) const;
-
-    bool operator==(const FloatRegister& rhs) const;
-    bool operator!=(const FloatRegister& rhs) const;
+    auto operator<=>(const FloatRegister & rhs) const = default;
 };
 
 std::ostream& operator<<(std::ostream& out, const FloatRegister& reg);
 
-} //end of ltac
-
-} //end of eddic
+} // namespace eddic::ltac
 
 namespace std {
     template<>
@@ -47,6 +39,6 @@ namespace std {
             return val.reg;
         }
     };
-}
+} // namespace std
 
 #endif

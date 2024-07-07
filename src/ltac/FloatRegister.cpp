@@ -21,22 +21,6 @@ ltac::FloatRegister::operator int(){
     return reg;
 }
 
-bool ltac::FloatRegister::operator<(const FloatRegister& rhs) const {
-    return reg > rhs.reg;
-}
-
-bool ltac::FloatRegister::operator>(const FloatRegister& rhs) const {
-    return reg < rhs.reg;
-}
-
-bool ltac::FloatRegister::operator==(const FloatRegister& rhs) const {
-    return reg == rhs.reg;
-}
-
-bool ltac::FloatRegister::operator!=(const FloatRegister& rhs) const {
-    return !(*this == rhs); 
-}
-
 std::ostream& ltac::operator<<(std::ostream& out, const ltac::FloatRegister& reg){
     return out << "fr" << reg.reg;
 }

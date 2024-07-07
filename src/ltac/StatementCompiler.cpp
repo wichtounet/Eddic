@@ -411,11 +411,7 @@ std::tuple<std::shared_ptr<const Type>, bool, unsigned int> ltac::StatementCompi
 }
 
 void ltac::StatementCompiler::compile_PARAM(mtac::Quadruple& param){
-    std::shared_ptr<const Type> type;
-    bool register_allocated;
-    unsigned int position;
-
-    std::tie(type, register_allocated, position) = common_param(param);
+    auto [type, register_allocated, position] = common_param(param);
 
     //1. If register allocated, find the correct register and move the value into it
 
@@ -533,11 +529,7 @@ void ltac::StatementCompiler::compile_PARAM(mtac::Quadruple& param){
 }
 
 void ltac::StatementCompiler::compile_PPARAM(mtac::Quadruple& param){
-    std::shared_ptr<const Type> type;
-    bool register_allocated;
-    unsigned int position;
-
-    std::tie(type, register_allocated, position) = common_param(param);
+    auto [type, register_allocated, position] = common_param(param);
 
     if(auto* ptr = boost::get<std::shared_ptr<Variable>>(&*param.arg1)){
         auto variable = *ptr;

@@ -29,7 +29,7 @@ namespace {
 mtac::InductionVariables find_all_candidates(mtac::loop& loop){
     mtac::InductionVariables candidates;
 
-    for(auto& bb : loop){
+    for(const auto& bb : loop){
         for(auto& quadruple : bb->statements){
             if(quadruple.op == mtac::Operator::ADD || quadruple.op == mtac::Operator::MUL || quadruple.op == mtac::Operator::DIV || quadruple.op == mtac::Operator::SUB || quadruple.op == mtac::Operator::MINUS){
                 candidates[quadruple.result] = {quadruple.uid(), nullptr, 0, 0, false};
@@ -57,12 +57,12 @@ void clean_defaults(mtac::InductionVariables& induction_variables){
 void find_basic_induction_variables(mtac::loop& loop){
     loop.basic_induction_variables() = find_all_candidates(loop);
 
-    for(auto& bb : loop){
+    for(const auto& bb : loop){
         for(auto& quadruple : bb->statements){
             auto var = quadruple.result;
 
             //If it is not a candidate, do not test it
-            if(!loop.basic_induction_variables().count(var)){
+            if(!loop.basic_induction_variables().contains(var)){
                 continue;
             }
 
@@ -121,12 +121,12 @@ void find_basic_induction_variables(mtac::loop& loop){
 void find_dependent_induction_variables(mtac::loop& loop, mtac::Function& function){
     loop.dependent_induction_variables() = find_all_candidates(loop);
 
-    for(auto& bb : loop){
+    for(const auto& bb : loop){
         for(auto& quadruple : bb->statements){
             auto var = quadruple.result;
 
             //If it is not a candidate, do not test it
-            if(!var || !loop.dependent_induction_variables().count(var)){
+            if(!var || !loop.dependent_induction_variables().contains(var)){
                 continue;
             }
 
@@ -142,7 +142,7 @@ void find_dependent_induction_variables(mtac::loop& loop, mtac::Function& functi
             auto arg1 = *quadruple.arg1;
 
             //If it is a basic induction variable, it is not a dependent induction variable
-            if(loop.basic_induction_variables().count(var)){
+            if(loop.basic_induction_variables().contains(var)){
                 loop.dependent_induction_variables().erase(var);
 
                 continue;
@@ -179,7 +179,7 @@ void find_dependent_induction_variables(mtac::loop& loop, mtac::Function& functi
                     auto e = boost::get<int>(arg1);
 
                     if(variable != var){
-                        if(loop.basic_induction_variables().count(variable)){
+                        if(loop.basic_induction_variables().contains(variable)){
                             loop.dependent_induction_variables()[var] = {quadruple.uid(), variable, e, 0, false}; 
                             valid = true;
                         } else if(loop.dependent_induction_variables()[variable].i){
@@ -193,7 +193,7 @@ void find_dependent_induction_variables(mtac::loop& loop, mtac::Function& functi
                     auto e = boost::get<int>(arg2);
 
                     if(variable != var){
-                        if(loop.basic_induction_variables().count(variable)){
+                        if(loop.basic_induction_variables().contains(variable)){
                             loop.dependent_induction_variables()[var] = {quadruple.uid(), variable, e, 0, false}; 
                             valid = true;
                         } else if(loop.dependent_induction_variables()[variable].i){
@@ -211,7 +211,7 @@ void find_dependent_induction_variables(mtac::loop& loop, mtac::Function& functi
                     auto e = boost::get<int>(arg1);
 
                     if(variable != var){
-                        if(loop.basic_induction_variables().count(variable)){
+                        if(loop.basic_induction_variables().contains(variable)){
                             loop.dependent_induction_variables()[var] = {quadruple.uid(), variable, 1, boost::get<int>(arg1), false}; 
                             valid = true;
                         } else if(loop.dependent_induction_variables()[variable].i){
@@ -225,7 +225,7 @@ void find_dependent_induction_variables(mtac::loop& loop, mtac::Function& functi
                     auto e = boost::get<int>(arg2);
 
                     if(variable != var){
-                        if(loop.basic_induction_variables().count(variable)){
+                        if(loop.basic_induction_variables().contains(variable)){
                             loop.dependent_induction_variables()[var] = {quadruple.uid(), variable, 1, boost::get<int>(arg2), false}; 
                             valid = true;
                         } else if(loop.dependent_induction_variables()[variable].i){
@@ -239,7 +239,7 @@ void find_dependent_induction_variables(mtac::loop& loop, mtac::Function& functi
                     auto var2 = boost::get<std::shared_ptr<Variable>>(arg2);
 
                     if(var1 == var2 && var1 != var){
-                        if(loop.basic_induction_variables().count(var1)){
+                        if(loop.basic_induction_variables().contains(var1)){
                             loop.dependent_induction_variables()[var] = {quadruple.uid(), var1, 2, 0, false}; 
                             valid = true;
                         } else if(loop.dependent_induction_variables()[var1].i){
@@ -257,7 +257,7 @@ void find_dependent_induction_variables(mtac::loop& loop, mtac::Function& functi
                     auto e = boost::get<int>(arg2);
 
                     if(variable != var){
-                        if(loop.basic_induction_variables().count(variable)){
+                        if(loop.basic_induction_variables().contains(variable)){
                             loop.dependent_induction_variables()[var] = {quadruple.uid(), variable, 1, -1 * boost::get<int>(arg2), false}; 
                             valid = true;
                         } else if(loop.dependent_induction_variables()[variable].i){
@@ -272,7 +272,7 @@ void find_dependent_induction_variables(mtac::loop& loop, mtac::Function& functi
                     auto variable = boost::get<std::shared_ptr<Variable>>(arg1);
 
                     if(variable != var){
-                        if(loop.basic_induction_variables().count(variable)){
+                        if(loop.basic_induction_variables().contains(variable)){
                             loop.dependent_induction_variables()[var] = {quadruple.uid(), variable, -1, 0, false}; 
                             valid = true;
                         } else if(loop.dependent_induction_variables()[variable].i){
