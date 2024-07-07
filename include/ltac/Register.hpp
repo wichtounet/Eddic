@@ -22,7 +22,7 @@ struct Register {
     unsigned short reg;
 
     Register();
-    Register(unsigned short);
+    explicit Register(unsigned short);
     
     explicit operator int();
 

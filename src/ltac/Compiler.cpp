@@ -25,7 +25,7 @@
 
 using namespace eddic;
 
-ltac::Compiler::Compiler(Platform platform, std::shared_ptr<Configuration> configuration) : platform(platform), configuration(configuration) {}
+ltac::Compiler::Compiler(Platform platform, std::shared_ptr<Configuration> configuration) : platform(platform), configuration(std::move(configuration)) {}
 
 void ltac::Compiler::compile(mtac::Program& source, FloatPool& float_pool){
     timing_timer timer(source.context->timing(), "ltac_compilation");
@@ -37,7 +37,7 @@ void ltac::Compiler::compile(mtac::Program& source, FloatPool& float_pool){
 
 void ltac::Compiler::compile(mtac::Function& function, FloatPool& float_pool){
     log::emit<Trace>("Compiler") << "Compile LTAC for function " << function.get_name() << log::endl;
-    
+
     //Compute the block usage (in order to know if we have to output the label)
     mtac::computeBlockUsage(function, block_usage);
 
@@ -48,11 +48,10 @@ void ltac::Compiler::compile(mtac::Function& function, FloatPool& float_pool){
         block->label = newLabel();
     }
     
-    StatementCompiler compiler(float_pool);
-    compiler.descriptor = getPlatformDescriptor(platform);
-    compiler.platform = platform;
-    compiler.configuration = configuration;
-    compiler.manager.pointer_escaped = mtac::escape_analysis(function);;
+    StatementCompiler compiler(platform, float_pool, *configuration, getPlatformDescriptor(platform));
+
+    // Perform escape-analysis
+    compiler.manager.pointer_escaped = mtac::escape_analysis(function);
     
     //Handle parameters and register-allocated variables
     compiler.collect_parameters(function.definition());

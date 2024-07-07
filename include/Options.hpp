@@ -27,7 +27,7 @@ struct Configuration {
      * \param option_name The name of the option to test. 
      * \return true if the option has been defined, otherwise false. 
      */
-    bool option_defined(const std::string& option_name);
+    bool option_defined(const std::string& option_name) const;
 
     /*!
      * Return the value of the defined option. 

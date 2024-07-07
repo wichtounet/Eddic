@@ -661,7 +661,7 @@ void replace_registers(mtac::Function& function, std::unordered_map<std::size_t,
     std::unordered_map<Pseudo, Hard> register_allocation;
 
     for(auto& pair : allocation){
-        register_allocation[graph.convert(pair.first)] = {static_cast<unsigned short>(pair.second)};
+        register_allocation[graph.convert(pair.first)] = Hard{static_cast<unsigned short>(pair.second)};
     }
 
     replace_registers(function, register_allocation);

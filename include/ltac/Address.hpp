@@ -17,16 +17,9 @@
 #include "ltac/PseudoRegister.hpp"
 #include "ltac/PseudoFloatRegister.hpp"
 
-namespace eddic {
+namespace eddic::ltac {
 
-namespace ltac {
-
-typedef boost::variant<
-            ltac::Register, 
-            ltac::PseudoRegister, 
-            ltac::PseudoFloatRegister,  //Not used
-            ltac::FloatRegister>        //Not used
-    AddressRegister;
+using AddressRegister = boost::variant<ltac::Register, ltac::PseudoRegister, ltac::PseudoFloatRegister, ltac::FloatRegister>;
 
 struct Address {
     boost::optional<ltac::AddressRegister> base_register;
@@ -37,11 +30,11 @@ struct Address {
     boost::optional<std::string> absolute;
 
     Address();
-    Address(std::string absolute);
+    explicit Address(std::string absolute);
     Address(std::string absolute, const ltac::AddressRegister& reg);
     Address(std::string absolute, int displacement);
     
-    Address(int displacement);
+    explicit Address(int displacement);
     Address(const ltac::AddressRegister& reg, int displacement);
     Address(const ltac::AddressRegister& reg, const ltac::AddressRegister& scaled);
     Address(const ltac::AddressRegister& reg, const ltac::AddressRegister& scaled, unsigned scale, int displacement);
@@ -52,8 +45,6 @@ bool operator!=(ltac::Address& lhs, ltac::Address& rhs);
 
 std::ostream& operator<<(std::ostream& out, const Address& address);
 
-} //end of ltac
-
-} //end of eddic
+} // namespace eddic::ltac
 
 #endif

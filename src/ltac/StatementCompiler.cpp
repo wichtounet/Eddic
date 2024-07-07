@@ -32,16 +32,17 @@ using namespace eddic;
 namespace {
 
 ltac::Address stack_address(int offset){
-    return ltac::Address(ltac::BP, offset);
+    return {ltac::BP, offset};
 }
 
 ltac::Address stack_address(ltac::AddressRegister offsetReg, int offset){
-    return ltac::Address(ltac::BP, offsetReg, 1, offset);
+    return {ltac::BP, offsetReg, 1, offset};
 }
 
 } //end of anonymous namespace
 
-ltac::StatementCompiler::StatementCompiler(FloatPool& float_pool) : manager(float_pool), float_pool(float_pool) {}
+ltac::StatementCompiler::StatementCompiler(Platform platform, FloatPool & float_pool, const Configuration & configuration, const PlatformDescriptor * descriptor) :
+        platform(platform), manager(float_pool), float_pool(float_pool), configuration(configuration), descriptor(descriptor) {}
 
 void ltac::StatementCompiler::end_bb(){
     if(ended){
@@ -378,7 +379,7 @@ std::tuple<std::shared_ptr<const Type>, bool, unsigned int> ltac::StatementCompi
     bool register_allocated = false;
     unsigned int position = 0;
 
-    if(param.std_param().length() > 0 || (param.param() && configuration->option_defined("fparameter-allocation"))){
+    if (param.std_param().length() > 0 || (param.param() && configuration.option_defined("fparameter-allocation"))) {
         unsigned int maxInt = descriptor->numberOfIntParamRegisters();
         unsigned int maxFloat = descriptor->numberOfFloatParamRegisters();
 
@@ -566,7 +567,7 @@ int ltac::StatementCompiler::function_stack_size(eddic::Function& function){
     unsigned int maxInt = descriptor->numberOfIntParamRegisters();
     unsigned int maxFloat = descriptor->numberOfFloatParamRegisters();
 
-    if(!function.standard() && !configuration->option_defined("fparameter-allocation")){
+    if(!function.standard() && !configuration.option_defined("fparameter-allocation")){
         maxInt = 0;
         maxFloat = 0;
     }
@@ -1312,15 +1313,14 @@ void ltac::StatementCompiler::compile_AND(mtac::Quadruple& quadruple){
 }
 
 void ltac::StatementCompiler::compile_RETURN(mtac::Quadruple& quadruple){
-    std::vector<ltac::PseudoRegister> uses;
-    std::vector<ltac::PseudoFloatRegister> float_uses;
+    ltac::Instruction instruction(ltac::Operator::PRE_RET);
 
     //A return without args is the same as exiting from the function
     if(quadruple.arg1){
         if(mtac::isFloat(*quadruple.arg1)){
             auto return_reg = manager.get_bound_pseudo_float_reg(descriptor->float_return_register());
             manager.move(*quadruple.arg1, return_reg);
-            float_uses.push_back(return_reg);
+            instruction.float_uses.push_back(return_reg);
         } else if(boost::get<std::shared_ptr<Variable>>(&*quadruple.arg1) && ltac::is_float_var(ltac::get_variable(*quadruple.arg1))){
             auto variable = boost::get<std::shared_ptr<Variable>>(*quadruple.arg1);
 
@@ -1328,25 +1328,22 @@ void ltac::StatementCompiler::compile_RETURN(mtac::Quadruple& quadruple){
             auto return_reg = manager.get_bound_pseudo_float_reg(descriptor->float_return_register());
 
             bb->emplace_back_low(ltac::Operator::FMOV, return_reg, reg);
-            float_uses.push_back(return_reg);
+            instruction.float_uses.push_back(return_reg);
         } else {
             auto reg1 = manager.get_bound_pseudo_reg(descriptor->int_return_register1());
             bb->emplace_back_low(ltac::Operator::MOV, reg1, to_arg(*quadruple.arg1));
-            uses.push_back(reg1);
+            instruction.uses.push_back(reg1);
 
             if(quadruple.arg2){
                 auto reg2 = manager.get_bound_pseudo_reg(descriptor->int_return_register2());
                 bb->emplace_back_low(ltac::Operator::MOV, reg2, to_arg(*quadruple.arg2));
-                uses.push_back(reg2);
+                instruction.uses.push_back(reg2);
             }
         }
     }
 
     end_bb_no_spill();
 
-    ltac::Instruction instruction(ltac::Operator::PRE_RET);
-    instruction.uses = uses;
-    instruction.float_uses = float_uses;
     bb->push_back(std::move(instruction));
 }
 

@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 
+#include "PlatformDescriptor.hpp"
 #include "variant.hpp"
 #include "FloatPool.hpp"
 #include "Options.hpp"
@@ -25,21 +26,7 @@ namespace ltac {
 
 class StatementCompiler {
     public:
-        const PlatformDescriptor* descriptor;
-        Platform platform;
-        std::shared_ptr<Configuration> configuration;
-
-        StatementCompiler(FloatPool& float_pool);
-
-        /*!
-         * Deleted copy constructor
-         */
-        StatementCompiler(const StatementCompiler& rhs) = delete;
-
-        /*!
-         * Deleted copy assignment operator.
-         */
-        StatementCompiler& operator=(const StatementCompiler& rhs) = delete;
+        StatementCompiler(Platform platform, FloatPool& float_pool, const Configuration & configuration, const PlatformDescriptor * descriptor);
 
         void collect_parameters(eddic::Function& definition);
 
@@ -58,7 +45,10 @@ class StatementCompiler {
         mtac::basic_block_p bb;
 
     private:
+        const Platform platform;
         FloatPool& float_pool;
+        const Configuration & configuration;
+        const PlatformDescriptor* descriptor;
 
         bool first_param = true;
 

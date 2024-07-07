@@ -195,8 +195,8 @@ std::shared_ptr<Configuration> eddic::parseOptions(int argc, const char* argv[])
     return configuration;
 }
 
-bool Configuration::option_defined(const std::string& option_name){
-    return values[option_name].defined;
+bool Configuration::option_defined(const std::string& option_name) const {
+    return values.at(option_name).defined;
 }
 
 std::string Configuration::option_value(const std::string& option_name){
