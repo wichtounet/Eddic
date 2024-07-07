@@ -37,8 +37,8 @@ class StatementCompiler {
 
         void compile(mtac::Quadruple& quadruple);
 
-        void push(ltac::Argument arg);
-        void pop(ltac::Argument arg);
+        void push(const ltac::Argument & arg);
+        void pop(const ltac::Argument & arg);
 
         ltac::RegisterManager manager;
 

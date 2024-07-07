@@ -49,7 +49,7 @@ void ltac::StatementCompiler::end_bb(){
         return;
     }
 
-    for(auto& var : manager.local){
+    for(const auto& var : manager.local){
         if(manager.is_written(var)){
             auto position = var->position();
 
@@ -332,11 +332,11 @@ void ltac::StatementCompiler::set_if_cc(ltac::Operator set, mtac::Quadruple& qua
     manager.set_written(quadruple.result);
 }
 
-void ltac::StatementCompiler::push(ltac::Argument arg){
+void ltac::StatementCompiler::push(const ltac::Argument & arg){
     bb->emplace_back_low(ltac::Operator::PUSH, arg);
 }
 
-void ltac::StatementCompiler::pop(ltac::Argument arg){
+void ltac::StatementCompiler::pop(const ltac::Argument & arg){
     bb->emplace_back_low(ltac::Operator::POP, arg);
 }
 
@@ -387,12 +387,12 @@ std::tuple<std::shared_ptr<const Type>, bool, unsigned int> ltac::StatementCompi
     bool register_allocated = false;
     unsigned int position = 0;
 
-    if (param.std_param().length() > 0 || (param.param() && configuration.option_defined("fparameter-allocation"))) {
-        unsigned int maxInt = descriptor->numberOfIntParamRegisters();
-        unsigned int maxFloat = descriptor->numberOfFloatParamRegisters();
+    if (!param.std_param().empty() || (param.param() && configuration.option_defined("fparameter-allocation"))) {
+        const unsigned int maxInt   = descriptor->numberOfIntParamRegisters();
+        const unsigned int maxFloat = descriptor->numberOfFloatParamRegisters();
 
         //It's a call to a standard function
-        if(param.std_param().length() > 0){
+        if(!param.std_param().empty()){
             type = param.function().parameter(param.std_param()).type();
             position = param.function().parameter_position_by_type(param.std_param());
         }
@@ -618,7 +618,7 @@ void ltac::StatementCompiler::compile_CALL(mtac::Quadruple& call){
     //Align stack pointer to the size of an INT
 
     if(total % INT->size(platform) != 0){
-        int padding = INT->size(platform) - (total % INT->size(platform));
+        const int padding = INT->size(platform) - (total % INT->size(platform));
         total += padding;
     }
 
@@ -873,9 +873,7 @@ void ltac::StatementCompiler::compile_DIV(mtac::Quadruple& quadruple){
     //This optimization cannot be done in the peephole optimizer
     //Form x = x / y when y is power of two
     if(*quadruple.arg1 == quadruple.result && mtac::isInt(*quadruple.arg2)){
-        int constant = boost::get<int>(*quadruple.arg2);
-
-        if(isPowerOfTwo(constant)){
+        if (const int constant = boost::get<int>(*quadruple.arg2); isPowerOfTwo(constant)) {
             bb->emplace_back_low(ltac::Operator::SHIFT_RIGHT, manager.get_pseudo_reg(quadruple.result), powerOfTwo(constant));
 
             manager.set_written(quadruple.result);
@@ -1207,7 +1205,7 @@ void ltac::StatementCompiler::compile_FDOT(mtac::Quadruple& quadruple){
     auto variable = boost::get<std::shared_ptr<Variable>>(*quadruple.arg1);
 
     assert(boost::get<int>(&*quadruple.arg2));
-    int offset = boost::get<int>(*quadruple.arg2);
+    const int offset = boost::get<int>(*quadruple.arg2);
 
     auto reg = manager.get_pseudo_float_reg_no_move(quadruple.result);
     bb->emplace_back_low(ltac::Operator::FMOV, reg, address(variable, offset));
@@ -1226,25 +1224,25 @@ void ltac::StatementCompiler::compile_PDOT(mtac::Quadruple& quadruple){
         auto ptr_reg = manager.get_pseudo_reg(variable);
 
         if(mtac::is<int>(*quadruple.arg2)){
-            int offset = boost::get<int>(*quadruple.arg2);
+            const int offset = boost::get<int>(*quadruple.arg2);
             bb->emplace_back_low(ltac::Operator::LEA, reg, ltac::Address(ptr_reg, offset));
         } else {
             assert(ltac::is_variable(*quadruple.arg2));
 
-            auto offset = manager.get_pseudo_reg(ltac::get_variable(*quadruple.arg2));
+            const auto offset = manager.get_pseudo_reg(ltac::get_variable(*quadruple.arg2));
             bb->emplace_back_low(ltac::Operator::LEA, reg, ltac::Address(ptr_reg, offset));
         }
     } else {
         if(mtac::is<int>(*quadruple.arg2)){
-            int offset = boost::get<int>(*quadruple.arg2);
+            const int offset = boost::get<int>(*quadruple.arg2);
 
-            auto reg2 = get_address_in_pseudo_reg(variable, offset);
+            const auto reg2 = get_address_in_pseudo_reg(variable, offset);
             bb->emplace_back_low(ltac::Operator::MOV, reg, reg2);
         } else {
             assert(ltac::is_variable(*quadruple.arg2));
 
-            auto offset = manager.get_pseudo_reg(ltac::get_variable(*quadruple.arg2));
-            auto reg2 = get_address_in_pseudo_reg2(variable, offset);
+            const auto offset = manager.get_pseudo_reg(ltac::get_variable(*quadruple.arg2));
+            const auto reg2 = get_address_in_pseudo_reg2(variable, offset);
 
             bb->emplace_back_low(ltac::Operator::MOV, reg, reg2);
         }
