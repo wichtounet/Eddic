@@ -65,14 +65,14 @@ class StatementCompiler {
 
         void set_if_cc(ltac::Operator set, mtac::Quadruple& quadruple, bool floats);
 
-        ltac::PseudoRegister to_register(std::shared_ptr<Variable> var);
+        ltac::PseudoRegister to_register(const std::shared_ptr<Variable> & var);
 
-        ltac::PseudoRegister get_address_in_pseudo_reg(std::shared_ptr<Variable> var, int offset);
-        ltac::PseudoRegister get_address_in_pseudo_reg2(std::shared_ptr<Variable> var, ltac::PseudoRegister offset);
+        ltac::PseudoRegister get_address_in_pseudo_reg(const std::shared_ptr<Variable> & var, int offset);
+        ltac::PseudoRegister get_address_in_pseudo_reg2(const std::shared_ptr<Variable> & var, ltac::PseudoRegister offset);
 
         ltac::Argument to_arg(mtac::Argument argument);
 
-        ltac::Address address(std::shared_ptr<Variable> var, mtac::Argument offset);
+        ltac::Address address(const std::shared_ptr<Variable> & var, mtac::Argument offset);
 
         std::tuple<std::shared_ptr<const Type>, bool, unsigned int> common_param(mtac::Quadruple& param);
         int function_stack_size(eddic::Function& function);

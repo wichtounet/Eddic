@@ -100,7 +100,7 @@ void ltac::StatementCompiler::collect_parameters(eddic::Function& definition){
     manager.collect_parameters(definition, descriptor);
 }
 
-ltac::PseudoRegister ltac::StatementCompiler::to_register(std::shared_ptr<Variable> var){
+ltac::PseudoRegister ltac::StatementCompiler::to_register(const std::shared_ptr<Variable> & var){
     return ltac::to_register(var, manager);
 }
 
@@ -108,66 +108,74 @@ ltac::Argument ltac::StatementCompiler::to_arg(mtac::Argument argument){
     return ltac::to_arg(argument, manager);
 }
 
-ltac::Address ltac::StatementCompiler::address(std::shared_ptr<Variable> var, mtac::Argument offset){
-    if(var->type()->is_pointer() || (var->type()->is_dynamic_array() && !var->position().isParameter())){
+ltac::Address ltac::StatementCompiler::address(const std::shared_ptr<Variable> & var, mtac::Argument offset) {
+    if (var->type()->is_pointer() || (var->type()->is_dynamic_array() && !var->position().isParameter())) {
         auto reg = manager.get_pseudo_reg(var);
 
-        if(auto* ptr = boost::get<int>(&offset)){
-            return ltac::Address(reg, *ptr);
-        } else {
-            auto offsetReg = manager.get_pseudo_reg(ltac::get_variable(offset));
-            return ltac::Address(reg, offsetReg);
-        }
-    } else {
-        auto position = var->position();
-
-        if(auto* ptr = boost::get<int>(&offset)){
-            if(position.isStack()){
-                return stack_address(position.offset() + *ptr);
-            } else if(position.isParameter()){
-                //The case of array is special because only the address is passed, not the complete array
-                if(var->type()->is_array()){
-                    auto reg = manager.get_free_pseudo_reg();
-
-                    bb->emplace_back_low(ltac::Operator::MOV, reg, stack_address(position.offset()));
-
-                    return ltac::Address(reg, *ptr);
-                //In the other cases, the value is passed, so we can compute the offset directly
-                } else {
-                    return stack_address(position.offset() + *ptr);
-                }
-            } else if(position.isGlobal()){
-                return ltac::Address("V" + position.name(), *ptr);
-            }
-
-            auto reg = manager.get_pseudo_reg(var);
-            return ltac::Address(reg, *ptr);
+        if (auto * ptr = boost::get<int>(&offset)) {
+            return {reg, *ptr};
         }
 
         auto offsetReg = manager.get_pseudo_reg(ltac::get_variable(offset));
+        return {reg, offsetReg};
+    }
 
-        if(position.isStack()){
-            return stack_address(offsetReg, position.offset());
-        } else if(position.isParameter()){
-            auto reg = manager.get_free_pseudo_reg();
+    auto position = var->position();
 
-            //The case of array is special because only the address is passed, not the complete array
-            if(var->type()->is_array()){
-                bb->emplace_back_low(ltac::Operator::MOV, reg, stack_address(position.offset()));
-            } else {
-                bb->emplace_back_low(ltac::Operator::LEA, reg, stack_address(position.offset()));
-            }
-
-            return ltac::Address(reg, offsetReg);
-        } else if(position.isGlobal()){
-            return ltac::Address("V" + position.name(), offsetReg);
+    if (auto * ptr = boost::get<int>(&offset)) {
+        if (position.isStack()) {
+            return stack_address(position.offset() + *ptr);
         }
 
-        assert(position.is_temporary());
+        if (position.isParameter()) {
+            // The case of array is special because only the address is passed, not the complete array
+            if (var->type()->is_array()) {
+                auto reg = manager.get_free_pseudo_reg();
+
+                bb->emplace_back_low(ltac::Operator::MOV, reg, stack_address(position.offset()));
+
+                return {reg, *ptr};
+            }
+
+            // In the other cases, the value is passed, so we can compute the offset directly
+            return stack_address(position.offset() + *ptr);
+        }
+
+        if (position.isGlobal()) {
+            return {"V" + position.name(), *ptr};
+        }
 
         auto reg = manager.get_pseudo_reg(var);
-        return ltac::Address(reg, offsetReg);
+        return {reg, *ptr};
     }
+
+    auto offsetReg = manager.get_pseudo_reg(ltac::get_variable(offset));
+
+    if (position.isStack()) {
+        return stack_address(offsetReg, position.offset());
+    }
+
+    if (position.isParameter()) {
+        auto reg = manager.get_free_pseudo_reg();
+
+        // The case of array is special because only the address is passed, not the complete array
+        if (var->type()->is_array()) {
+            bb->emplace_back_low(ltac::Operator::MOV, reg, stack_address(position.offset()));
+        } else {
+            bb->emplace_back_low(ltac::Operator::LEA, reg, stack_address(position.offset()));
+        }
+
+        return {reg, offsetReg};
+    }
+
+    if (position.isGlobal()) {
+        return {"V" + position.name(), offsetReg};
+    }
+
+    assert(position.is_temporary());
+
+    auto reg = manager.get_pseudo_reg(var);
+    return {reg, offsetReg};
 }
 
 void ltac::StatementCompiler::pass_in_int_register(mtac::Argument& argument, int position){
@@ -340,7 +348,7 @@ void ltac::StatementCompiler::compile_GOTO(mtac::Quadruple& quadruple){
     bb->emplace_back_low(quadruple.block->label, ltac::Operator::ALWAYS);
 }
 
-ltac::PseudoRegister ltac::StatementCompiler::get_address_in_pseudo_reg(std::shared_ptr<Variable> var, int offset){
+ltac::PseudoRegister ltac::StatementCompiler::get_address_in_pseudo_reg(const std::shared_ptr<Variable> & var, int offset){
     auto reg = manager.get_free_pseudo_reg();
 
     bb->emplace_back_low(ltac::Operator::LEA, reg, address(var, offset));
@@ -348,7 +356,7 @@ ltac::PseudoRegister ltac::StatementCompiler::get_address_in_pseudo_reg(std::sha
     return reg;
 }
 
-ltac::PseudoRegister ltac::StatementCompiler::get_address_in_pseudo_reg2(std::shared_ptr<Variable> var, ltac::PseudoRegister offset){
+ltac::PseudoRegister ltac::StatementCompiler::get_address_in_pseudo_reg2(const std::shared_ptr<Variable> & var, ltac::PseudoRegister offset){
     auto reg = manager.get_free_pseudo_reg();
 
     bb->emplace_back_low(ltac::Operator::LEA, reg, address(var, 0));
