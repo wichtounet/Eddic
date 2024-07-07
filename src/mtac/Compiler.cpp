@@ -7,6 +7,7 @@
 
 #include <string>
 #include <utility>
+#include <ranges>
 
 #define BOOST_NO_RTTI
 #define BOOST_NO_TYPEID
@@ -175,6 +176,7 @@ arguments get_member(mtac::Function& function, unsigned int offset, std::shared_
 
         return {t1, t2};
     }
+
     if (member_type->is_array() && !member_type->is_dynamic_array()) {
         // Get a reference to the array
         if (T == ArgumentType::REFERENCE) {
@@ -200,21 +202,18 @@ arguments get_member(mtac::Function& function, unsigned int offset, std::shared_
                         t2, var, mtac::Operator::DOT,
                         static_cast<int>(index_offset + INT->size(function.context->global()->target_platform())));
 
-                    result.push_back(t1);
-                    result.push_back(t2);
+                    result.emplace_back(t1);
+                    result.emplace_back(t2);
                 } else if (data_type->is_custom_type()) {
                     auto base_var = function.context->new_reference(member_type, var, offset);
 
                     auto struct_type = function.context->global()->get_struct(data_type);
 
                     for (auto& member : struct_type->members) {
-                        std::shared_ptr<const Type> member_type;
-                        unsigned int offset = 0;
-                        boost::tie(offset, member_type) =
-                            mtac::compute_member(function.context->global(), base_var->type(), member.name);
+                        auto [offset, member_type] = mtac::compute_member(function.context->global(), base_var->type(), member.name);
 
                         auto new_args = get_member(function, offset, member_type, base_var);
-                        std::copy(new_args.begin(), new_args.end(), std::back_inserter(result));
+                        std::ranges::copy(new_args, std::back_inserter(result));
                     }
                 } else if (data_type == FLOAT || data_type == INT || data_type == CHAR || data_type == BOOL ||
                            data_type->is_pointer()) {
@@ -226,14 +225,14 @@ arguments get_member(mtac::Function& function, unsigned int offset, std::shared_
                         function.emplace_back(temp, var, mtac::Operator::DOT, static_cast<int>(index_offset));
                     }
 
-                    result.push_back(temp);
+                    result.emplace_back(temp);
                 } else {
                     cpp_unreachable("Unhandled type");
                 }
             }
 
             // The number of elements
-            result.push_back(static_cast<int>(elements));
+            result.emplace_back(static_cast<int>(elements));
 
             return result;
         }
@@ -276,12 +275,10 @@ arguments struct_to_arguments(mtac::Function& function, const std::shared_ptr<co
     auto struct_type = function.context->global()->get_struct(type);
 
     for(auto& member : struct_type->members){
-        std::shared_ptr<const Type> member_type;
-        unsigned int member_offset = 0;
-        boost::tie(member_offset, member_type) = mtac::compute_member(function.context->global(), type, member.name);
+        auto [member_offset, member_type] = mtac::compute_member(function.context->global(), type, member.name);
 
         auto new_args = get_member<>(function, member_offset + offset, member_type, base_var);
-        std::copy(new_args.begin(), new_args.end(), std::back_inserter(result));
+        std::ranges::copy(new_args, std::back_inserter(result));
     }
 
     return result;
@@ -474,9 +471,7 @@ arguments compute_expression_operation(mtac::Function& function, std::shared_ptr
                 auto variable = boost::get<std::shared_ptr<Variable>>(left[0]);
                 auto& member = boost::get<ast::Literal>(operation_value).value;
 
-                std::shared_ptr<const Type> member_type;
-                unsigned int offset = 0;
-                boost::tie(offset, member_type) = mtac::compute_member(function.context->global(), variable->type(), member);
+                auto [offset, member_type] = mtac::compute_member(function.context->global(), variable->type(), member);
 
                 if(T == ArgumentType::ADDRESS){
                     auto temp = function.context->new_temporary(member_type->is_pointer() ? member_type : new_pointer_type(member_type));
@@ -1253,9 +1248,7 @@ struct AssignmentVisitor : public boost::static_visitor<> {
 
             auto& member = boost::get<ast::Literal>(last_operation.get<1>()).value;
 
-            unsigned int offset = 0;
-            std::shared_ptr<const Type> member_type;
-            boost::tie(offset, member_type) = mtac::compute_member(function.context->global(), struct_variable->type(), member);
+            auto [offset, member_type] = mtac::compute_member(function.context->global(), struct_variable->type(), member);
 
             if(member_type->is_structure()){
                 auto this_ptr = function.context->new_temporary(new_pointer_type(member_type));

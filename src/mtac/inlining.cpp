@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <ranges>
 
 #include "logging.hpp"
 #include "Options.hpp"
@@ -541,7 +542,7 @@ bool mtac::inline_functions::operator()(mtac::Program& program){
                 //Sort them to inline the edges in the order of the topological sort
 
                 std::sort(callers.begin(), callers.end(),
-                        [&order](const func_ref& lhs, const func_ref& rhs){ return std::find(order.begin(), order.end(), lhs) < std::find(order.begin(),order.end(), rhs); });
+                        [&order](const func_ref& lhs, const func_ref& rhs){ return std::ranges::find(order, lhs) < std::ranges::find(order, rhs); });
 
                 auto& source_function = program.mtac_function(function);
 

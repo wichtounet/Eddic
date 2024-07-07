@@ -6,6 +6,7 @@
 //=======================================================================
 
 #include <list>
+#include <ranges>
 
 #include "cpp_utils/assert.hpp"
 
@@ -129,7 +130,9 @@ bool contains_reg(Opt& arg, Pseudo reg){
     if(arg){
         if(auto* ptr = boost::get<Pseudo>(&*arg)){
             return reg == *ptr;
-        } else if(auto* ptr = boost::get<ltac::Address>(&*arg)){
+        }
+
+        if(auto* ptr = boost::get<ltac::Address>(&*arg)){
             return contains_reg_addr(ptr->base_register, reg)
                 || contains_reg_addr(ptr->scaled_register, reg);
         }
@@ -261,12 +264,12 @@ void find_local_registers(mtac::Function& function, local_reg<Pseudo>& local_pse
 
     //TODO Find a more efficient way to prune the results...
 
-    for(auto& bb : function){
+    for(const auto& bb : function){
         for(auto& reg : pseudo_registers[bb]){
             bool found = false;
 
-            for(auto& bb2 : function){
-                if(bb != bb2 && pseudo_registers[bb2].count(reg)){
+            for(const auto& bb2 : function){
+                if(bb != bb2 && pseudo_registers[bb2].contains(reg)){
                     found = true;
                     break;
                 }
@@ -279,11 +282,11 @@ void find_local_registers(mtac::Function& function, local_reg<Pseudo>& local_pse
     }
 }
 
-template<typename Pseudo>
-std::size_t count_store_complete(mtac::basic_block_p bb, Pseudo& reg){
+template <typename Pseudo>
+std::size_t count_store_complete(const mtac::basic_block_p & bb, Pseudo & reg) {
     std::size_t count = 0;
-    for(auto& statement : bb->l_statements){
-        if(is_store_complete<Pseudo>(statement, reg)){
+    for (auto & statement : bb->l_statements) {
+        if (is_store_complete<Pseudo>(statement, reg)) {
             ++count;
         }
     }
@@ -451,7 +454,7 @@ bool coalesce(ltac::interference_graph<Pseudo>& graph, mtac::Function& function)
     //TODO Instead of pruning dependent registers pairs, update the graph 
     //and continue to avoid too many rebuilding of the graph
 
-    for(auto& bb : function){
+    for(const auto& bb : function){
         for(auto& instruction : bb->l_statements){
             if(is_copy<Pseudo>(instruction)){
                 auto reg1 = boost::get<Pseudo>(*instruction.arg1);
@@ -460,9 +463,9 @@ bool coalesce(ltac::interference_graph<Pseudo>& graph, mtac::Function& function)
                 if(
                            reg1 != reg2
                         && !reg1.bound && !reg2.bound 
-                        && local_pseudo_registers[bb].count(reg1) && local_pseudo_registers[bb].count(reg2) 
+                        && local_pseudo_registers[bb].contains(reg1) && local_pseudo_registers[bb].contains(reg2) 
                         && !graph.connected(graph.convert(reg1), graph.convert(reg2))
-                        && !prune.count(reg1) && !prune.count(reg2))
+                        && !prune.contains(reg1) && !prune.contains(reg2))
                 {
                     LOG<Debug>("registers") << "Coalesce " << reg1 << " and " << reg2 << log::endl;
 
@@ -483,10 +486,10 @@ bool coalesce(ltac::interference_graph<Pseudo>& graph, mtac::Function& function)
 
 //4. Spill costs
 
-static const std::size_t store_cost = 5;
-static const std::size_t load_cost = 3;
+constexpr std::size_t store_cost = 5;
+constexpr std::size_t load_cost = 3;
 
-std::size_t depth_cost(unsigned int depth){
+constexpr std::size_t depth_cost(unsigned int depth){
     unsigned int cost = 1;
 
     while(depth > 0){
@@ -521,7 +524,7 @@ void update_cost(Opt& arg, ltac::interference_graph<Pseudo>& graph, unsigned int
 
 template<typename Pseudo>
 void estimate_spill_costs(mtac::Function& function, ltac::interference_graph<Pseudo>& graph){
-    for(auto& bb : function){
+    for(const auto& bb : function){
         for(auto& statement : bb->l_statements){
             if(ltac::erase_result(statement.op)){
                 if(auto* reg_ptr = boost::get<Pseudo>(&*statement.arg1)){
@@ -540,27 +543,21 @@ void estimate_spill_costs(mtac::Function& function, ltac::interference_graph<Pse
 //5. Simplify
 
 template<typename Pseudo>
-typename std::enable_if<std::is_same<Pseudo, ltac::PseudoRegister>::value, unsigned int>::type number_of_registers(Platform platform){
-    auto descriptor = getPlatformDescriptor(platform);
-    return descriptor->number_of_registers();
+unsigned int number_of_registers(Platform platform){
+    if constexpr (std::is_same_v<Pseudo, ltac::PseudoFloatRegister>) {
+        return getPlatformDescriptor(platform)->number_of_float_registers();
+    } else {
+        return getPlatformDescriptor(platform)->number_of_registers();
+    }
 }
 
 template<typename Pseudo>
-typename std::enable_if<std::is_same<Pseudo, ltac::PseudoFloatRegister>::value, unsigned int>::type number_of_registers(Platform platform){
-    auto descriptor = getPlatformDescriptor(platform);
-    return descriptor->number_of_float_registers();
-}
-
-template<typename Pseudo>
-typename std::enable_if<std::is_same<Pseudo, ltac::PseudoRegister>::value, std::vector<unsigned short>>::type hard_registers(Platform platform){
-    auto descriptor = getPlatformDescriptor(platform);
-    return descriptor->symbolic_registers();
-}
-
-template<typename Pseudo>
-typename std::enable_if<std::is_same<Pseudo, ltac::PseudoFloatRegister>::value, std::vector<unsigned short>>::type hard_registers(Platform platform){
-    auto descriptor = getPlatformDescriptor(platform);
-    return descriptor->symbolic_float_registers();
+std::vector<unsigned short> hard_registers(Platform platform){
+    if constexpr (std::is_same_v<Pseudo, ltac::PseudoFloatRegister>) {
+        return getPlatformDescriptor(platform)->symbolic_float_registers();
+    } else {
+        return getPlatformDescriptor(platform)->symbolic_registers();
+    }
 }
 
 //TODO Find a way to get rid of that and use graph.degree() instead
@@ -570,21 +567,21 @@ template<typename Pseudo>
 std::size_t degree(ltac::interference_graph<Pseudo>& graph, std::size_t candidate, const std::list<std::size_t>& order){
     std::size_t count = 0;
 
-    auto& neighbors = graph.neighbors(candidate);
+    const auto& neighbors = graph.neighbors(candidate);
 
     std::unordered_set<std::size_t> bound;
 
     for(auto neighbor : neighbors){
         auto n_reg = graph.convert(neighbor);
 
-        if(std::find(order.begin(), order.end(), neighbor) == order.end()){
+        if (!std::ranges::contains(order, neighbor)) {
             ++count;
 
             if(n_reg.bound){
                 bound.insert(n_reg.binding);
             }
         } else {
-            if(n_reg.bound && !bound.count(n_reg.binding)){
+            if(n_reg.bound && !bound.contains(n_reg.binding)){
                 ++count;
                 bound.insert(n_reg.binding);
             }
@@ -658,13 +655,13 @@ void simplify(ltac::interference_graph<Pseudo>& graph, Platform platform, std::v
 
 template<typename Pseudo, typename Hard>
 void replace_registers(mtac::Function& function, std::unordered_map<std::size_t, std::size_t>& allocation, ltac::interference_graph<Pseudo>& graph){
-    std::unordered_map<Pseudo, Hard> register_allocation;
+    std::unordered_map<Pseudo, Hard> replacement;
 
     for(auto& pair : allocation){
-        register_allocation[graph.convert(pair.first)] = Hard{static_cast<unsigned short>(pair.second)};
+        replacement[graph.convert(pair.first)] = Hard{static_cast<unsigned short>(pair.second)};
     }
 
-    replace_registers(function, register_allocation);
+    replace_registers(function, replacement);
 }
 
 template<typename Pseudo, typename Hard>
@@ -694,7 +691,7 @@ void select(ltac::interference_graph<Pseudo>& graph, mtac::Function& function, P
             bool found = false;
 
             for(auto neighbor : graph.neighbors(reg)){
-                if((allocation.count(neighbor) && allocation[neighbor] == color)){
+                if((allocation.contains(neighbor) && allocation[neighbor] == color)){
                     found = true;
                     break;
                 }
@@ -708,11 +705,11 @@ void select(ltac::interference_graph<Pseudo>& graph, mtac::Function& function, P
             }
         }
 
-        if(!allocation.count(reg)){
+        if(!allocation.contains(reg)){
             std::cout << "Error allocating " << graph.convert(reg) << std::endl;
 
             for(auto neighbor : graph.neighbors(reg)){
-                if(allocation.count(neighbor)){
+                if(allocation.contains(neighbor)){
                     std::cout << "neighbor " << graph.convert(neighbor) << " of color " << allocation[neighbor] << std::endl;
                 } else {
                     std::cout << "uncolored neighbor " << graph.convert(neighbor) << " of color " << std::endl;
@@ -723,11 +720,11 @@ void select(ltac::interference_graph<Pseudo>& graph, mtac::Function& function, P
         cpp_assert(allocation.count(reg), "The register must have been allocated a color");
     }
 
-    for(auto& alloc : allocation){
+    for(const auto& alloc : allocation){
         function.use(Hard(alloc.second));
     }
 
-    for(auto& alloc : variable_allocated){
+    for(const auto& alloc : variable_allocated){
         function.variable_use(Hard(alloc));
     }
 

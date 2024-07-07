@@ -74,18 +74,17 @@ class RegisterManager {
         ltac::PseudoRegister get_bound_pseudo_reg(unsigned short hard);
         ltac::PseudoFloatRegister get_bound_pseudo_float_reg(unsigned short hard);
 
-        bool is_written(std::shared_ptr<Variable> variable);
-        void set_written(std::shared_ptr<Variable> variable);
-
-        bool is_escaped(std::shared_ptr<Variable> variable);
+        bool is_written(const std::shared_ptr<Variable> & variable);
+        void set_written(const std::shared_ptr<Variable> & variable);
+        bool is_escaped(const std::shared_ptr<Variable> & variable);
 
         void collect_parameters(eddic::Function& definition, const PlatformDescriptor* descriptor);
 
         int last_pseudo_reg();
         int last_float_pseudo_reg();
 
-        void remove_from_pseudo_reg(std::shared_ptr<Variable> variable);
-        void remove_from_pseudo_float_reg(std::shared_ptr<Variable> variable);
+        void remove_from_pseudo_reg(const std::shared_ptr<Variable> & variable);
+        void remove_from_pseudo_float_reg(const std::shared_ptr<Variable> & variable);
     
     private: 
         FloatPool& float_pool;

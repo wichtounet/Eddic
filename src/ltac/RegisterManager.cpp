@@ -201,7 +201,7 @@ ltac::PseudoFloatRegister ltac::RegisterManager::get_free_pseudo_float_reg(){
     return pseudo_float_registers.get_new_reg();
 }
 
-bool ltac::RegisterManager::is_escaped(std::shared_ptr<Variable> variable){
+bool ltac::RegisterManager::is_escaped(const std::shared_ptr<Variable> & variable){
     if(pointer_escaped->count(variable)){
         LOG<Trace>("Registers") << variable->name() << " is escaped " << log::endl;
 
@@ -229,11 +229,11 @@ void ltac::RegisterManager::collect_parameters(eddic::Function& definition, cons
     }
 }
 
-bool ltac::RegisterManager::is_written(std::shared_ptr<Variable> variable){
-    return written.find(variable) != written.end();
+bool ltac::RegisterManager::is_written(const std::shared_ptr<Variable> & variable){
+    return written.contains(variable);
 }
 
-void ltac::RegisterManager::set_written(std::shared_ptr<Variable> variable){
+void ltac::RegisterManager::set_written(const std::shared_ptr<Variable> & variable){
     written.insert(variable);
 }
 
@@ -245,10 +245,10 @@ int ltac::RegisterManager::last_float_pseudo_reg(){
     return pseudo_float_registers.last_reg();
 }
 
-void ltac::RegisterManager::remove_from_pseudo_reg(std::shared_ptr<Variable> variable){
+void ltac::RegisterManager::remove_from_pseudo_reg(const std::shared_ptr<Variable> & variable){
     return pseudo_registers.remove_from_reg(variable);
 }
 
-void ltac::RegisterManager::remove_from_pseudo_float_reg(std::shared_ptr<Variable> variable){
+void ltac::RegisterManager::remove_from_pseudo_float_reg(const std::shared_ptr<Variable> & variable){
     return pseudo_float_registers.remove_from_reg(variable);
 }
