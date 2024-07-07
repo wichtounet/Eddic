@@ -10,30 +10,24 @@
 
 #include <ostream>
 
-namespace eddic {
-
-namespace ltac {
+namespace eddic::ltac {
 
 /*!
  * \struct Register
  * Represents a symbolic hard register in the LTAC Representation. 
  */
 struct Register {
-    unsigned short reg;
+    unsigned short reg = 0;
 
-    Register();
-    explicit Register(unsigned short);
-    
-    explicit operator int();
+    Register() = default;
+    explicit Register(unsigned short reg) : reg(reg) {}
 
-    bool operator<(const Register& rhs) const;
-    bool operator>(const Register& rhs) const;
+    explicit operator int() const {
+        return reg;
+    }
 
-    bool operator==(const Register& rhs) const;
-    bool operator!=(const Register& rhs) const;
+    auto operator<=>(const Register & rhs) const = default;
 };
-
-std::ostream& operator<<(std::ostream& out, const Register& reg);
 
 /*!
  * Represent the stack pointer. 
@@ -45,9 +39,19 @@ static const Register SP(1000);
  */
 static const Register BP(1001);
 
-} //end of ltac
+inline std::ostream & operator<<(std::ostream & out, const Register & reg) {
+    if (reg == BP) {
+        return out << "bp";
+    }
 
-} //end of eddic
+    if (reg == SP) {
+        return out << "sp";
+    }
+
+    return out << "r" << reg.reg;
+}
+
+} // namespace eddic::ltac
 
 namespace std {
     template<>
@@ -57,6 +61,6 @@ namespace std {
             return val.reg;
         }
     };
-}
+} // namespace std
 
 #endif
