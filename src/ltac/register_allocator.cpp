@@ -574,7 +574,7 @@ std::size_t degree(ltac::interference_graph<Pseudo>& graph, std::size_t candidat
     for(auto neighbor : neighbors){
         auto n_reg = graph.convert(neighbor);
 
-        if (!std::ranges::contains(order, neighbor)) {
+        if (std::ranges::find(order, neighbor) == order.end()) {
             ++count;
 
             if(n_reg.bound){
