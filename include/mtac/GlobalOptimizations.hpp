@@ -8,6 +8,7 @@
 #ifndef MTAC_GLOBAL_OPTIMIZATIONS_H
 #define MTAC_GLOBAL_OPTIMIZATIONS_H
 
+#include "cpp_utils/assert.hpp"
 #define BOOST_NO_RTTI
 #define BOOST_NO_TYPEID
 #include <boost/range/adaptors.hpp>
@@ -21,9 +22,7 @@
 #include "mtac/Program.hpp"
 #include "mtac/DataFlowProblem.hpp"
 
-namespace eddic {
-
-namespace mtac {
+namespace eddic::mtac {
 
 template<typename Left, typename Right>
 inline void assign(Left& old, Right&& value, bool& changes){
@@ -433,44 +432,25 @@ std::shared_ptr<DataFlowResults<typename Problem::ProblemDomain>> fast_backward_
     return results;
 }
 
-template<typename Problem>
-typename std::enable_if<Problem::Type == DataFlowType::Forward, std::shared_ptr<DataFlowResults<typename Problem::ProblemDomain>>>::type 
-data_flow(mtac::Function& function, Problem& problem){
-    return forward_data_flow<Problem::Low>(function, problem);
+template <typename Problem>
+typename std::shared_ptr<DataFlowResults<typename Problem::ProblemDomain>> data_flow(mtac::Function & function, Problem & problem) {
+    if constexpr (Problem::Type == DataFlowType::Forward) {
+        return forward_data_flow<Problem::Low>(function, problem);
+    } else if constexpr (Problem::Type == DataFlowType::Backward) {
+        return backward_data_flow<Problem::Low>(function, problem);
+    } else if constexpr (Problem::Type == DataFlowType::Fast_Forward) {
+        return fast_forward_data_flow<Problem::Low>(function, problem);
+    } else if constexpr (Problem::Type == DataFlowType::Fast_Forward_Block) {
+        return fast_forward_data_flow_block(function, problem);
+    } else if constexpr (Problem::Type == DataFlowType::Fast_Backward) {
+        return fast_backward_data_flow<Problem::Low>(function, problem);
+    } else if constexpr (Problem::Type == DataFlowType::Fast_Backward_Block) {
+        return fast_backward_data_flow_block(function, problem);
+    } else {
+        cpp_unreachable("Invalid data_flow handling");
+    }
 }
 
-template<typename Problem>
-typename std::enable_if<Problem::Type == DataFlowType::Backward, std::shared_ptr<DataFlowResults<typename Problem::ProblemDomain>>>::type 
-data_flow(mtac::Function& function, Problem& problem){
-    return backward_data_flow<Problem::Low>(function, problem);
-}
-
-template<typename Problem>
-typename std::enable_if<Problem::Type == DataFlowType::Fast_Forward, std::shared_ptr<DataFlowResults<typename Problem::ProblemDomain>>>::type 
-data_flow(mtac::Function& function, Problem& problem){
-    return fast_forward_data_flow<Problem::Low>(function, problem);
-}
-
-template<typename Problem>
-typename std::enable_if<Problem::Type == DataFlowType::Fast_Forward_Block, std::shared_ptr<DataFlowResults<typename Problem::ProblemDomain>>>::type 
-data_flow(mtac::Function& function, Problem& problem){
-    return fast_forward_data_flow_block(function, problem);
-}
-
-template<typename Problem>
-typename std::enable_if<Problem::Type == DataFlowType::Fast_Backward, std::shared_ptr<DataFlowResults<typename Problem::ProblemDomain>>>::type 
-data_flow(mtac::Function& function, Problem& problem){
-    return fast_backward_data_flow<Problem::Low>(function, problem);
-}
-
-template<typename Problem>
-typename std::enable_if<Problem::Type == DataFlowType::Fast_Backward_Block, std::shared_ptr<DataFlowResults<typename Problem::ProblemDomain>>>::type 
-data_flow(mtac::Function& function, Problem& problem){
-    return fast_backward_data_flow_block(function, problem);
-}
-
-} //end of mtac
-
-} //end of eddic
+} // namespace eddic::mtac
 
 #endif
