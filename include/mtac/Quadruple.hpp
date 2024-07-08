@@ -14,6 +14,7 @@
 
 #include "tac/Size.hpp"
 
+#include "mtac/forward.hpp"
 #include "mtac/Operator.hpp"
 #include "mtac/Argument.hpp"
 
@@ -23,9 +24,6 @@ class Function;
 class Variable;
 
 namespace mtac {
-
-class basic_block;
-typedef std::shared_ptr<basic_block> basic_block_p;
 
 //TODO Quadruple should be made smaller to allow faster removal
 

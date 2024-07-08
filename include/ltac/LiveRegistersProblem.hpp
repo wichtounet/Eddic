@@ -33,6 +33,14 @@ struct LiveRegisterValues {
     std::unordered_set<Reg> registers;
     std::unordered_set<FloatReg> float_registers;
 
+    auto inserter() {
+        return [this](auto & reg) { this->insert(reg); };
+    }
+
+    auto eraser() {
+        return [this](auto & reg) { this->erase(reg); };
+    }
+
     void insert(const Reg& reg){
         registers.insert(reg);
     }
@@ -84,7 +92,7 @@ struct LiveRegistersProblem {
     ProblemDomain Init(mtac::Function& function);
    
     void meet(ProblemDomain& in, const ProblemDomain& out);
-    ProblemDomain transfer(mtac::basic_block_p basic_block, ltac::Instruction& statement, ProblemDomain& in);
+    ProblemDomain transfer(const mtac::basic_block_p & basic_block, ltac::Instruction& statement, ProblemDomain& in);
 
     ProblemDomain top_element(){
         return ProblemDomain();
@@ -109,7 +117,7 @@ struct LivePseudoRegistersProblem {
     ProblemDomain Init(mtac::Function& function);
    
     void meet(ProblemDomain& in, const ProblemDomain& out);
-    ProblemDomain transfer(mtac::basic_block_p basic_block, ltac::Instruction& statement, ProblemDomain& in);
+    ProblemDomain transfer(const mtac::basic_block_p & basic_block, ltac::Instruction& statement, ProblemDomain& in);
 
     ProblemDomain top_element(){
         return ProblemDomain();

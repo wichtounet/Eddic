@@ -60,7 +60,7 @@ void mtac::LiveVariableAnalysisProblem::meet(ProblemDomain& out, const ProblemDo
     }
 }
 
-void mtac::LiveVariableAnalysisProblem::transfer(mtac::basic_block_p B, ProblemDomain& x){
+void mtac::LiveVariableAnalysisProblem::transfer(const mtac::basic_block_p & B, ProblemDomain& x){
     auto& x_values = x.values();
 
     //Compute x - def(B)
@@ -76,7 +76,7 @@ void mtac::LiveVariableAnalysisProblem::transfer(mtac::basic_block_p B, ProblemD
     }
 }
 
-void mtac::LiveVariableAnalysisProblem::transfer(mtac::basic_block_p/* basic_block*/, mtac::Quadruple& quadruple, ProblemDomain& in){
+void mtac::LiveVariableAnalysisProblem::transfer(const mtac::basic_block_p &/* basic_block*/, mtac::Quadruple& quadruple, ProblemDomain& in){
     if(in.top()){
         ProblemDomain::Values values;
         in.int_values = values;

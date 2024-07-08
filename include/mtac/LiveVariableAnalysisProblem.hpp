@@ -41,8 +41,8 @@ struct LiveVariableAnalysisProblem {
    
     void meet(ProblemDomain& in, const ProblemDomain& out);
     
-    void transfer(mtac::basic_block_p basic_block, ProblemDomain& in);
-    void transfer(mtac::basic_block_p basic_block, mtac::Quadruple& statement, ProblemDomain& in);
+    void transfer(const mtac::basic_block_p & basic_block, ProblemDomain& in);
+    void transfer(const mtac::basic_block_p & basic_block, mtac::Quadruple& statement, ProblemDomain& in);
     
     std::unordered_map<mtac::basic_block_p, std::set<std::shared_ptr<Variable>>> def;
     std::unordered_map<mtac::basic_block_p, std::set<std::shared_ptr<Variable>>> use;

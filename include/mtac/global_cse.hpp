@@ -40,7 +40,7 @@ class global_cse {
         ProblemDomain Boundary(mtac::Function& function);
 
         void meet(ProblemDomain& in, const ProblemDomain& out);
-        void transfer(mtac::basic_block_p basic_block, ProblemDomain& in);
+        void transfer(const mtac::basic_block_p & basic_block, ProblemDomain& in);
         bool optimize(mtac::Function& function, std::shared_ptr<DataFlowResults<ProblemDomain>> results);
 
         boost::optional<Expressions> init;

@@ -83,7 +83,7 @@ class ConstantPropagationProblem {
         ProblemDomain Boundary(mtac::Function& function);
 
         void meet(ProblemDomain& in, const ProblemDomain& out);
-        void transfer(mtac::basic_block_p basic_block, mtac::Quadruple& quadruple, ProblemDomain& in);
+        void transfer(const mtac::basic_block_p & basic_block, mtac::Quadruple& quadruple, ProblemDomain& in);
         bool optimize(mtac::Function& function, std::shared_ptr<DataFlowResults<ProblemDomain>> global_results);
 
     private:

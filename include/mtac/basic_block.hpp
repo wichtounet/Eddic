@@ -146,8 +146,6 @@ class basic_block {
         std::shared_ptr<basic_block> dominator = nullptr;     /*!< The immediate dominator of this basic block. */
 };
 
-typedef std::shared_ptr<basic_block> basic_block_p;
-
 std::ostream& operator<<(std::ostream& stream, const basic_block& basic_block);
 std::ostream& operator<<(std::ostream& stream, const basic_block_p& basic_block);
 

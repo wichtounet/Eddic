@@ -232,7 +232,7 @@ double compute(mtac::Operator op, double lhs, double rhs){
     }
 }
 
-void mtac::ConstantPropagationProblem::transfer(mtac::basic_block_p, mtac::Quadruple& quadruple, ProblemDomain& out){
+void mtac::ConstantPropagationProblem::transfer(const mtac::basic_block_p &, mtac::Quadruple& quadruple, ProblemDomain& out){
     auto op = quadruple.op;
 
     if(op == mtac::Operator::NOP){

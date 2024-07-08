@@ -12,21 +12,17 @@
 
 #include "variant.hpp"
 
-namespace eddic {
-
-namespace mtac {
+namespace eddic::mtac {
 
 struct Program;
 class Function;
 
 class basic_block;
-typedef std::shared_ptr<mtac::basic_block> basic_block_p;
-typedef std::shared_ptr<const mtac::basic_block> basic_block_cp;
+using basic_block_p  = std::shared_ptr<mtac::basic_block>;
+using basic_block_cp = std::shared_ptr<const mtac::basic_block>;
 
 struct Quadruple;
 
-} //end of mtac
-
-} //end of eddic
+} // namespace eddic::mtac
 
 #endif

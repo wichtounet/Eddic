@@ -117,7 +117,7 @@ struct ConstantCollector : public boost::static_visitor<> {
 
 } //end of anonymous namespace
 
-void mtac::OffsetConstantPropagationProblem::transfer(mtac::basic_block_p /*basic_block*/, mtac::Quadruple& quadruple, ProblemDomain& out){
+void mtac::OffsetConstantPropagationProblem::transfer(const mtac::basic_block_p & /*basic_block*/, mtac::Quadruple& quadruple, ProblemDomain& out){
     //Store the value assigned to result+arg1
     if(quadruple.op == mtac::Operator::DOT_ASSIGN || quadruple.op == mtac::Operator::DOT_FASSIGN || quadruple.op == mtac::Operator::DOT_PASSIGN){
         if(auto* ptr = boost::get<int>(&*quadruple.arg1)){

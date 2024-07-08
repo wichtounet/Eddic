@@ -100,7 +100,7 @@ ProblemDomain mtac::global_cse::Init(mtac::Function&){
     return result;
 }
 
-void mtac::global_cse::transfer(mtac::basic_block_p basic_block, ProblemDomain& out){
+void mtac::global_cse::transfer(const mtac::basic_block_p & basic_block, ProblemDomain& out){
     auto& out_values = out.values();
     auto it = out_values.begin();
 
