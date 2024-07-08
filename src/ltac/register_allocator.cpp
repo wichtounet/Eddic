@@ -40,24 +40,22 @@ using namespace eddic;
 
 namespace {
 
-template<typename Pseudo>
-typename std::enable_if<std::is_same<Pseudo, ltac::PseudoRegister>::value, std::size_t>::type last_register(mtac::Function& function){
-    return function.pseudo_registers();
+template <typename Pseudo>
+auto last_register(mtac::Function & function) {
+    if constexpr (std::is_same_v<Pseudo, ltac::PseudoFloatRegister>) {
+        return function.pseudo_float_registers();
+    } else {
+        return function.pseudo_registers();
+    }
 }
 
-template<typename Pseudo>
-typename std::enable_if<std::is_same<Pseudo, ltac::PseudoFloatRegister>::value, std::size_t>::type last_register(mtac::Function& function){
-    return function.pseudo_float_registers();
-}
-
-template<typename Pseudo>
-typename std::enable_if<std::is_same<Pseudo, ltac::PseudoRegister>::value, void>::type set_last_reg(mtac::Function& function, std::size_t reg){
-    function.set_pseudo_registers(reg);
-}
-
-template<typename Pseudo>
-typename std::enable_if<std::is_same<Pseudo, ltac::PseudoFloatRegister>::value, void>::type set_last_reg(mtac::Function& function, std::size_t reg){
-    function.set_pseudo_float_registers(reg);
+template <typename Pseudo>
+void set_last_reg(mtac::Function & function, std::size_t reg) {
+    if constexpr (std::is_same_v<Pseudo, ltac::PseudoFloatRegister>) {
+        function.set_pseudo_float_registers(reg);
+    } else {
+        function.set_pseudo_registers(reg);
+    }
 }
 
 template<typename Source, typename Target>
@@ -80,7 +78,7 @@ template<typename Source, typename Target, typename Opt>
 void update_reg(Opt& reg, std::unordered_map<Source, Target>& register_allocation){
     if(reg){
         if(auto* ptr = boost::get<Source>(&*reg)){
-            if(register_allocation.count(*ptr)){
+            if(register_allocation.contains(*ptr)){
                 reg = register_allocation[*ptr];
             }
         }
@@ -91,7 +89,7 @@ template<typename Source, typename Target, typename Opt>
 void update(Opt& arg, std::unordered_map<Source, Target>& register_allocation){
     if(arg){
         if(auto* ptr = boost::get<Source>(&*arg)){
-            if(register_allocation.count(*ptr)){
+            if(register_allocation.contains(*ptr)){
                 arg = register_allocation[*ptr];
             }
         } else if(auto* ptr = boost::get<ltac::Address>(&*arg)){
@@ -103,7 +101,7 @@ void update(Opt& arg, std::unordered_map<Source, Target>& register_allocation){
 
 template<typename Source, typename Target>
 void replace_registers(mtac::Function& function, std::unordered_map<Source, Target>& register_allocation){
-    for(auto& bb : function){
+    for (const auto & bb : function) {
         for(auto& statement : bb->l_statements){
             update(statement.arg1, register_allocation);
             update(statement.arg2, register_allocation);
@@ -612,18 +610,18 @@ void simplify(ltac::interference_graph<Pseudo>& graph, Platform platform, std::v
     LOG<Trace>("registers") << "Attempt a " << K << "-coloring of the graph" << log::endl;
 
     while(!n.empty()){
-        std::size_t node;
+        std::size_t node = 0;
         bool found = false;
 
         for(auto candidate : n){
             LOG<Dev>("registers") << "Degree(" << graph.convert(candidate) << ") = " << degree(graph, candidate, order) << log::endl;
             if(degree(graph, candidate, order) < K){
-                node = candidate;        
+                node = candidate;
                 found = true;
                 break;
             }
         }
-        
+
         if(!found){
             node = *n.begin();
             auto min_cost = spill_heuristic(graph, node, order);
@@ -717,7 +715,7 @@ void select(ltac::interference_graph<Pseudo>& graph, mtac::Function& function, P
             }
         }
 
-        cpp_assert(allocation.count(reg), "The register must have been allocated a color");
+        cpp_assert(allocation.contains(reg), "The register must have been allocated a color");
     }
 
     for(const auto& alloc : allocation){
