@@ -92,21 +92,20 @@ visit(Visitor&& visitor, const Visitable& visitable){
  * \param visitable The object to visit. 
  * \return The result of the visit. 
  */
-template<typename Visitor, typename Visitable>
-inline typename std::enable_if<!std::is_void<typename Visitor::result_type>::value, typename Visitor::result_type>::type 
-visit(Visitor& visitor, Visitable& visitable){
+template <typename Visitor, typename Visitable>
+inline Visitor::result_type visit(Visitor & visitor, Visitable & visitable) {
     return boost::apply_visitor(visitor, visitable);
 }
 
 /*!
- * Apply the visitor to the given object. 
+ * Apply the visitor to the given object. The object can be a non-variant type. 
  * \param visitor The visitor to apply. 
  * \param visitable The object to visit. 
+ * \return The result of the visit. 
  */
-template<typename Visitor, typename Visitable>
-inline typename std::enable_if<std::is_void<typename Visitor::result_type>::value, typename Visitor::result_type>::type 
-visit(Visitor& visitor, Visitable& visitable){
-    boost::apply_visitor(visitor, visitable);
+template <typename Visitor, typename Visitable>
+Visitor::result_type visit_non_variant(Visitor & visitor, Visitable & visitable) {
+    return visitor(visitable);
 }
 
 /*!
@@ -115,21 +114,9 @@ visit(Visitor& visitor, Visitable& visitable){
  * \param visitable The object to visit. 
  * \return The result of the visit. 
  */
-template<typename Visitor, typename Visitable>
-inline typename std::enable_if<!std::is_void<typename Visitor::result_type>::value, typename Visitor::result_type>::type 
-visit_non_variant(Visitor& visitor, Visitable& visitable){
+template <typename Visitor, typename Visitable>
+Visitor::result_type visit_non_variant(const Visitor & visitor, Visitable & visitable) {
     return visitor(visitable);
-}
-
-/*!
- * Apply the visitor to the given object. The object can be a non-variant type. 
- * \param visitor The visitor to apply. 
- * \param visitable The object to visit. 
- */
-template<typename Visitor, typename Visitable>
-inline typename std::enable_if<std::is_void<typename Visitor::result_type>::value, typename Visitor::result_type>::type 
-visit_non_variant(Visitor& visitor, Visitable& visitable){
-    visitor(visitable);
 }
 
 /*!
@@ -138,44 +125,9 @@ visit_non_variant(Visitor& visitor, Visitable& visitable){
  * \param visitable The object to visit. 
  * \return The result of the visit. 
  */
-template<typename Visitor, typename Visitable>
-inline typename std::enable_if<!std::is_void<typename Visitor::result_type>::value, typename Visitor::result_type>::type 
-visit_non_variant(const Visitor& visitor, Visitable& visitable){
+template <typename Visitor, typename Visitable>
+Visitor::result_type visit_non_variant(const Visitor & visitor, const Visitable & visitable) {
     return visitor(visitable);
-}
-
-/*!
- * Apply the visitor to the given object. The object can be a non-variant type. 
- * \param visitor The visitor to apply. 
- * \param visitable The object to visit. 
- */
-template<typename Visitor, typename Visitable>
-inline typename std::enable_if<std::is_void<typename Visitor::result_type>::value, typename Visitor::result_type>::type 
-visit_non_variant(const Visitor& visitor, Visitable& visitable){
-    visitor(visitable);
-}
-
-/*!
- * Apply the visitor to the given object. The object can be a non-variant type. 
- * \param visitor The visitor to apply. 
- * \param visitable The object to visit. 
- * \return The result of the visit. 
- */
-template<typename Visitor, typename Visitable>
-inline typename std::enable_if<!std::is_void<typename Visitor::result_type>::value, typename Visitor::result_type>::type 
-visit_non_variant(const Visitor& visitor, const Visitable& visitable){
-    return visitor(visitable);
-}
-
-/*!
- * Apply the visitor to the given object. The object can be a non-variant type. 
- * \param visitor The visitor to apply. 
- * \param visitable The object to visit. 
- */
-template<typename Visitor, typename Visitable>
-inline typename std::enable_if<std::is_void<typename Visitor::result_type>::value, typename Visitor::result_type>::type 
-visit_non_variant(const Visitor& visitor, const Visitable& visitable){
-    visitor(visitable);
 }
 
 /*!

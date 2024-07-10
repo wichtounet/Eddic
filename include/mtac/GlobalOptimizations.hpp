@@ -35,13 +35,13 @@ inline void assign(Left& old, Right&& value, bool& changes){
     old = value;
 }
 
-template<bool Low>
-inline typename std::enable_if<Low, std::vector<ltac::Instruction>&>::type get_statements(mtac::basic_block_p& B){
+template <bool Low>
+inline std::enable_if_t<Low, std::vector<ltac::Instruction> &> get_statements(mtac::basic_block_p & B) {
     return B->l_statements;
 }
 
-template<bool Low>
-inline typename std::enable_if<!Low, std::vector<mtac::Quadruple>&>::type get_statements(mtac::basic_block_p& B){
+template <bool Low>
+inline std::enable_if_t<!Low, std::vector<mtac::Quadruple> &> get_statements(mtac::basic_block_p & B) {
     return B->statements;
 }
 

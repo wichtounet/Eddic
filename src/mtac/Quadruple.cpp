@@ -213,6 +213,8 @@ std::string size(tac::Size size){
             return " (dword)";
         case tac::Size::QUAD_WORD:
             return " (qword)";
+        default:
+            cpp_unreachable("Invalid TAC Size");
     }
 }
 

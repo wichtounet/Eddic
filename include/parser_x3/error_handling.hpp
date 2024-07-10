@@ -58,15 +58,12 @@ namespace x3_grammar {
             return error_handlers.back();
         }
 
-        template<typename AST, std::enable_if_t<std::is_base_of<boost::spirit::x3::file_position_tagged, AST>::value, int> = 42>
+        template<typename AST>
         void tag(AST& t, iterator_type it, iterator_type end){
-            t.id_file = error_handlers.size() - 1;
-            error_handlers[t.id_file].tag(t, it, end);
-        }
-
-        template<typename AST, std::enable_if_t<!std::is_base_of<boost::spirit::x3::file_position_tagged, AST>::value, int> = 42>
-        void tag(AST&, iterator_type, iterator_type){
-            //Nothing to do here
+            if constexpr (std::is_base_of_v<boost::spirit::x3::file_position_tagged, AST>) {
+                t.id_file = error_handlers.size() - 1;
+                error_handlers[t.id_file].tag(t, it, end);
+            }
         }
 
         void operator()(iterator_type err_pos, const std::string& message);
