@@ -228,19 +228,16 @@ void find_reg(Opt& arg, std::unordered_set<Pseudo>& registers){
     }
 }
 
-template<typename Stmt, typename Pseudo>
-typename std::enable_if<std::is_same<Pseudo, ltac::PseudoRegister>::value, void>::type 
-get_special_uses(Stmt& instruction, std::unordered_set<Pseudo>& local_pseudo_registers){
-    for(auto& reg : instruction.uses){
-        local_pseudo_registers.insert(reg);
-    }
-}
-
-template<typename Stmt, typename Pseudo>
-typename std::enable_if<std::is_same<Pseudo, ltac::PseudoFloatRegister>::value, void>::type 
-get_special_uses(Stmt& instruction, std::unordered_set<Pseudo>& local_pseudo_registers){
-    for(auto& reg : instruction.float_uses){
-        local_pseudo_registers.insert(reg);
+template <typename Stmt, typename Pseudo>
+void get_special_uses(Stmt & instruction, std::unordered_set<Pseudo> & local_pseudo_registers) {
+    if constexpr (std::is_same_v<Pseudo, ltac::PseudoFloatRegister>) {
+        for (auto & reg : instruction.float_uses) {
+            local_pseudo_registers.insert(reg);
+        }
+    } else {
+        for (auto & reg : instruction.uses) {
+            local_pseudo_registers.insert(reg);
+        }
     }
 }
 
@@ -357,8 +354,8 @@ void gather(Opt& arg, ltac::interference_graph<Pseudo>& graph){
 
 template<typename Pseudo>
 void gather_pseudo_regs(mtac::Function& function, ltac::interference_graph<Pseudo>& graph){
-    for(auto& bb : function){
-        for(auto& statement : bb->l_statements){
+    for (const auto & bb : function) {
+        for (auto & statement : bb->l_statements) {
             gather(statement.arg1, graph);
             gather(statement.arg2, graph);
             gather(statement.arg3, graph);
@@ -368,14 +365,13 @@ void gather_pseudo_regs(mtac::Function& function, ltac::interference_graph<Pseud
     LOG<Trace>("registers") << "Found " << graph.size() << " pseudo registers" << log::endl;
 }
 
-template<typename Pseudo, typename Results>
-typename std::enable_if<std::is_same<Pseudo, ltac::PseudoRegister>::value, std::unordered_set<Pseudo>&>::type get_live_results(Results& results){
-    return results.registers;
-}
-
-template<typename Pseudo, typename Results>
-typename std::enable_if<std::is_same<Pseudo, ltac::PseudoFloatRegister>::value, std::unordered_set<Pseudo>&>::type get_live_results(Results& results){
-    return results.float_registers;
+template <typename Pseudo, typename Results>
+std::unordered_set<Pseudo> & get_live_results(Results & results) {
+    if constexpr (std::is_same_v<Pseudo, ltac::PseudoFloatRegister>) {
+        return results.float_registers;
+    } else {
+        return results.registers;
+    }
 }
 
 template<typename Pseudo>
@@ -427,18 +423,13 @@ void build_interference_graph(ltac::interference_graph<Pseudo>& graph, mtac::Fun
 
 //3. Coalesce
 
-template<typename Pseudo>
-typename std::enable_if<std::is_same<Pseudo, ltac::PseudoRegister>::value, bool>::type is_copy(ltac::Instruction& statement){
-    return statement.op == ltac::Operator::MOV 
-        && boost::get<Pseudo>(&*statement.arg1) 
-        && boost::get<Pseudo>(&*statement.arg2);
-}
-
-template<typename Pseudo>
-typename std::enable_if<std::is_same<Pseudo, ltac::PseudoFloatRegister>::value, bool>::type is_copy(ltac::Instruction& statement){
-    return statement.op == ltac::Operator::FMOV 
-        && boost::get<Pseudo>(&*statement.arg1) 
-        && boost::get<Pseudo>(&*statement.arg2);
+template <typename Pseudo>
+bool is_copy(ltac::Instruction & statement) {
+    if constexpr (std::is_same_v<Pseudo, ltac::PseudoFloatRegister>) {
+        return statement.op == ltac::Operator::FMOV && boost::get<Pseudo>(&*statement.arg1) && boost::get<Pseudo>(&*statement.arg2);
+    } else {
+        return statement.op == ltac::Operator::MOV && boost::get<Pseudo>(&*statement.arg1) && boost::get<Pseudo>(&*statement.arg2);
+    }
 }
 
 template<typename Pseudo>

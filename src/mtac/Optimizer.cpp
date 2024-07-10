@@ -13,6 +13,7 @@
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/for_each.hpp>
 
+#include "cpp_utils/assert.hpp"
 #include "cpp_utils/tmp.hpp"
 
 #include "Options.hpp"
@@ -160,25 +161,17 @@ typedef boost::mpl::vector<
         mtac::parameter_propagation*
     > ipa_passes;
 
-template<typename Pass>
-struct need_pool {
-    static const bool value = mtac::pass_traits<Pass>::property_flags & mtac::PROPERTY_POOL;
-};
+template <typename Pass>
+inline constexpr bool need_pool = mtac::pass_traits<Pass>::property_flags & mtac::PROPERTY_POOL;
 
-template<typename Pass>
-struct need_platform {
-    static const bool value = mtac::pass_traits<Pass>::property_flags & mtac::PROPERTY_PLATFORM;
-};
+template <typename Pass>
+inline constexpr bool need_platform = mtac::pass_traits<Pass>::property_flags & mtac::PROPERTY_PLATFORM;
 
-template<typename Pass>
-struct need_configuration {
-    static const bool value = mtac::pass_traits<Pass>::property_flags & mtac::PROPERTY_CONFIGURATION;
-};
+template <typename Pass>
+inline constexpr bool need_configuration = mtac::pass_traits<Pass>::property_flags & mtac::PROPERTY_CONFIGURATION;
 
-template<typename Pass>
-struct need_program {
-    static const bool value = mtac::pass_traits<Pass>::property_flags & mtac::PROPERTY_PROGRAM;
-};
+template <typename Pass>
+inline constexpr bool need_program = mtac::pass_traits<Pass>::property_flags & mtac::PROPERTY_PROGRAM;
 
 struct pass_runner {
     bool optimized = false;
@@ -195,48 +188,38 @@ struct pass_runner {
             program(program), pool(pool), configuration(configuration), platform(platform), system(system) {};
 
     template<typename Pass>
-    inline void apply_todo(){
+    void apply_todo(){
         //No todo are implemented
     }
 
     template<typename Pass>
-    inline typename std::enable_if_t<need_pool<Pass>::value, void> set_pool(Pass& pass){
-        pass.set_pool(pool);
+    void set_pool(Pass& pass){
+        if constexpr (need_pool<Pass>) {
+            pass.set_pool(pool);
+        }
     }
 
     template<typename Pass>
-    inline typename std::enable_if_t<!need_pool<Pass>::value, void> set_pool(Pass&){
-        //NOP
+    void set_platform(Pass& pass){
+        if constexpr (need_platform<Pass>) {
+            pass.set_platform(platform);
+        }
     }
 
     template<typename Pass>
-    inline typename std::enable_if_t<need_platform<Pass>::value, void> set_platform(Pass& pass){
-        pass.set_platform(platform);
+    void set_configuration(Pass& pass){
+        if constexpr (need_configuration<Pass>) {
+            pass.set_configuration(configuration);
+        }
     }
 
     template<typename Pass>
-    inline typename std::enable_if_t<!need_platform<Pass>::value, void> set_platform(Pass&){
-        //NOP
-    }
-
-    template<typename Pass>
-    inline typename std::enable_if_t<need_configuration<Pass>::value, void> set_configuration(Pass& pass){
-        pass.set_configuration(configuration);
-    }
-
-    template<typename Pass>
-    inline typename std::enable_if_t<!need_configuration<Pass>::value, void> set_configuration(Pass&){
-        //NOP
-    }
-
-    template<typename Pass>
-    inline typename std::enable_if_t<need_program<Pass>::value, Pass> construct(){
-        return Pass(program);
-    }
-
-    template<typename Pass>
-    inline typename std::enable_if_t<!need_program<Pass>::value, Pass> construct(){
-        return Pass();
+    Pass construct(){
+        if constexpr (need_program<Pass>) {
+            return Pass(program);
+        } else {
+            return Pass();
+        }
     }
 
     template<typename Pass>
@@ -250,119 +233,103 @@ struct pass_runner {
         return pass;
     }
 
-    template<typename Pass>
-    inline typename std::enable_if_t<has_gate<Pass, bool(Pass::*)(std::shared_ptr<Configuration>)>::value, bool> has_to_be_run(Pass& pass){
-        return pass.gate(configuration);
-    }
-
-    template<typename Pass>
-    inline typename std::enable_if_t<!has_gate<Pass, bool(Pass::*)(std::shared_ptr<Configuration>)>::value, bool> has_to_be_run(Pass&){
-        return true;
-    }
-
-    template<typename Pass>
-    inline typename std::enable_if<mtac::pass_traits<Pass>::type == mtac::pass_type::IPA, bool>::type apply(Pass& pass){
-        return pass(program);
-    }
-
-    template<typename Pass>
-    inline typename std::enable_if<mtac::pass_traits<Pass>::type == mtac::pass_type::IPA_SUB, bool>::type apply(Pass&){
-        for(auto& function : program.functions){
-            this->function = &function;
-
-            if(log::enabled<Debug>()){
-                LOG<Debug>("Optimizer") << "Start optimizations on " << function.get_name() << log::endl;
-
-                std::cout << function << std::endl;
-            }
-
-            boost::mpl::for_each<typename mtac::pass_traits<Pass>::sub_passes>(boost::ref(*this));
+    template <typename Pass>
+    bool has_to_be_run(Pass & pass) {
+        if constexpr (has_gate<Pass, bool (Pass::*)(std::shared_ptr<Configuration>)>::value) {
+            return pass.gate(configuration);
+        } else {
+            return true;
         }
-
-        return false;
     }
 
-    template<typename Pass>
-    inline typename std::enable_if<mtac::pass_traits<Pass>::type == mtac::pass_type::CUSTOM, bool>::type apply(Pass& pass){
-        return pass(*function);
-    }
+    template <typename Pass>
+    bool apply(Pass & pass) {
+        constexpr auto type = mtac::pass_traits<Pass>::type;
 
-    template<typename Pass>
-    inline typename std::enable_if<mtac::pass_traits<Pass>::type == mtac::pass_type::LOCAL, bool>::type apply(Pass& visitor){
-        for(auto& block : *function){
-            for(auto& quadruple : block->statements){
-                visitor(quadruple);
+        if constexpr (type == mtac::pass_type::IPA) {
+            return pass(program);
+        } else if constexpr (type == mtac::pass_type::IPA_SUB) {
+            for (auto & function : program.functions) {
+                this->function = &function;
+
+                if (log::enabled<Debug>()) {
+                    LOG<Debug>("Optimizer") << "Start optimizations on " << function.get_name() << log::endl;
+
+                    std::cout << function << std::endl;
+                }
+
+                boost::mpl::for_each<typename mtac::pass_traits<Pass>::sub_passes>(boost::ref(*this));
             }
+
+            return false;
+        } else if constexpr (type == mtac::pass_type::CUSTOM) {
+            return pass(*function);
+        } else if constexpr (type == mtac::pass_type::LOCAL) {
+            for (auto & block : *function) {
+                for (auto & quadruple : block->statements) {
+                    pass(quadruple);
+                }
+            }
+
+            return pass.optimized;
+        } else if constexpr (type == mtac::pass_type::DATA_FLOW) {
+            auto results = mtac::data_flow(*function, pass);
+
+            // Once the data-flow problem is fixed, statements can be optimized
+            return pass.optimize(*function, results);
+        } else if constexpr (type == mtac::pass_type::BB) {
+            bool optimized = false;
+
+            for (auto & block : *function) {
+                pass.clear();
+
+                for (auto & quadruple : block->statements) {
+                    pass(quadruple);
+                }
+
+                optimized |= pass.optimized;
+            }
+
+            return optimized;
+        } else if constexpr (type == mtac::pass_type::BB_TWO_PASS) {
+            bool optimized = false;
+
+            for (auto & block : *function) {
+                pass.clear();
+
+                pass.pass = mtac::Pass::DATA_MINING;
+                for (auto & quadruple : block->statements) {
+                    pass(quadruple);
+                }
+
+                pass.pass = mtac::Pass::OPTIMIZE;
+                for (auto & quadruple : block->statements) {
+                    pass(quadruple);
+                }
+
+                optimized |= pass.optimized;
+            }
+
+            return optimized;
+        } else {
+            cpp_unreachable("Invalid pass type");
         }
-
-        return visitor.optimized;
     }
 
-    template<typename Pass>
-    inline typename std::enable_if<mtac::pass_traits<Pass>::type == mtac::pass_type::DATA_FLOW, bool>::type apply(Pass& problem){
-        auto results = mtac::data_flow(*function, problem);
+    template <typename Pass>
+    void debug_local(bool local) {
+        if constexpr (mtac::pass_traits<Pass>::type == mtac::pass_type::IPA || mtac::pass_traits<Pass>::type == mtac::pass_type::IPA_SUB) {
+            LOG<Debug>("Optimizer") << mtac::pass_traits<Pass>::name() << " returned " << local << log::endl;
+        } else {
+            if (log::enabled<Debug>()) {
+                if (local) {
+                    LOG<Debug>("Optimizer") << mtac::pass_traits<Pass>::name() << " returned true" << log::endl;
 
-        //Once the data-flow problem is fixed, statements can be optimized
-        return problem.optimize(*function, results);
-    }
-
-    template<typename Pass>
-    inline typename std::enable_if<mtac::pass_traits<Pass>::type == mtac::pass_type::BB, bool>::type apply(Pass& visitor){
-        bool optimized = false;
-
-        for(auto& block : *function){
-            visitor.clear();
-
-            for(auto& quadruple : block->statements){
-                visitor(quadruple);
-            }
-
-            optimized |= visitor.optimized;
-        }
-
-        return optimized;
-    }
-
-    template<typename Pass>
-    inline typename std::enable_if<mtac::pass_traits<Pass>::type == mtac::pass_type::BB_TWO_PASS, bool>::type apply(Pass& visitor){
-        bool optimized = false;
-
-        for(auto& block : *function){
-            visitor.clear();
-
-            visitor.pass = mtac::Pass::DATA_MINING;
-            for(auto& quadruple : block->statements){
-                visitor(quadruple);
-            }
-
-            visitor.pass = mtac::Pass::OPTIMIZE;
-            for(auto& quadruple : block->statements){
-                visitor(quadruple);
-            }
-
-            optimized |= visitor.optimized;
-        }
-
-        return optimized;
-    }
-
-    template<typename Pass>
-    inline typename std::enable_if<cpp::or_u<mtac::pass_traits<Pass>::type == mtac::pass_type::IPA, mtac::pass_traits<Pass>::type == mtac::pass_type::IPA_SUB>::value, void>::type
-    debug_local(bool local){
-        LOG<Debug>("Optimizer") << mtac::pass_traits<Pass>::name() << " returned " << local << log::endl;
-    }
-
-    template<typename Pass>
-    inline typename std::enable_if<cpp::and_u<mtac::pass_traits<Pass>::type != mtac::pass_type::IPA, mtac::pass_traits<Pass>::type != mtac::pass_type::IPA_SUB>::value, void>::type
-    debug_local(bool local){
-        if(log::enabled<Debug>()){
-            if(local){
-                LOG<Debug>("Optimizer") << mtac::pass_traits<Pass>::name() << " returned true" << log::endl;
-
-                //Print the function
-                std::cout << *function << std::endl;
-            } else {
-                LOG<Debug>("Optimizer") << mtac::pass_traits<Pass>::name() << " returned false" << log::endl;
+                    // Print the function
+                    std::cout << *function << std::endl;
+                } else {
+                    LOG<Debug>("Optimizer") << mtac::pass_traits<Pass>::name() << " returned false" << log::endl;
+                }
             }
         }
     }
