@@ -59,8 +59,7 @@ visit(Visitor&& visitor, Visitable& visitable){
 template<typename Visitor, typename Visitable>
 inline typename std::enable_if<!std::is_void<typename Visitor::result_type>::value, typename Visitor::result_type>::type 
 visit(Visitor&& visitor, const Visitable& visitable){
-    //TODO There is a bug in boost that forbid to pass const variant to apply_visitor
-    return boost::apply_visitor(std::forward<Visitor>(visitor), const_cast<Visitable&>(visitable));
+    return boost::apply_visitor(std::forward<Visitor>(visitor), visitable);
 }
 
 /*!
@@ -82,8 +81,7 @@ visit(Visitor&& visitor, Visitable& visitable){
 template<typename Visitor, typename Visitable>
 inline typename std::enable_if<std::is_void<typename Visitor::result_type>::value, typename Visitor::result_type>::type
 visit(Visitor&& visitor, const Visitable& visitable){
-    //TODO There is a bug in boost that forbid to pass const variant to apply_visitor
-    boost::apply_visitor(std::forward<Visitor>(visitor), const_cast<Visitable&>(visitable));
+    boost::apply_visitor(std::forward<Visitor>(visitor), visitable);
 }
 
 /*!
