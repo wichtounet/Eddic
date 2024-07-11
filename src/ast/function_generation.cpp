@@ -102,12 +102,21 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
             FunctionParameter parameter;
             parameter.parameterName = "rhs";
 
-            ast::SimpleType type;
-            type.const_ = false;
-            type.type = c.struct_type->type();
-
             ast::PointerType ptr_type;
-            ptr_type.type = type;
+
+            if (struct_.is_template_instantation()) {
+                ast::TemplateType struct_type;
+                struct_type.type = struct_.name;
+                struct_type.template_types = struct_.inst_template_types;
+
+                ptr_type.type = struct_type;
+            } else {
+                ast::SimpleType type;
+                type.const_ = false;
+                type.type   = c.struct_type->type();
+
+                ptr_type.type = type;
+            }
 
             parameter.parameterType = ptr_type;
 
