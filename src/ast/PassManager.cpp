@@ -40,29 +40,30 @@ using namespace eddic;
 
 namespace {
 
-void apply_pass(std::shared_ptr<ast::Pass> pass, ast::struct_definition& struct_){
-    pass->apply_struct(struct_, false);
+void apply_pass(ast::Pass & pass, ast::struct_definition& struct_){
+    pass.apply_struct(struct_, false);
 
     for(auto& block : struct_.blocks){
         if(auto* ptr = boost::get<ast::TemplateFunctionDeclaration>(&block)){
             if(!ptr->is_template()){
-                pass->apply_struct_function(*ptr);
+                pass.apply_struct_function(*ptr);
             }
         } else if(auto* ptr = boost::get<ast::Destructor>(&block)){
-            pass->apply_struct_destructor(*ptr);
+            pass.apply_struct_destructor(*ptr);
         } else if(auto* ptr = boost::get<ast::Constructor>(&block)){
-            pass->apply_struct_constructor(*ptr);
+            pass.apply_struct_constructor(*ptr);
         }
     }
 }
 
-void apply_pass(std::shared_ptr<ast::Pass> pass, ast::SourceFile& program, std::shared_ptr<Configuration> configuration){
-    LOG<Info>("Passes") << "Run pass \"" << pass->name() << "\"" << log::endl;
+void apply_pass(ast::Pass & pass, ast::SourceFile& program, Configuration & configuration){
+    LOG<Info>("Passes") << "Run (standard) pass \"" << pass.name() << "\"" << log::endl;
+
     program.context->stats().inc_counter("passes");
 
-    for(unsigned int i = 0; i < pass->passes(); ++i){
-        pass->set_current_pass(i);
-        pass->apply_program(program, false);
+    for(unsigned int i = 0; i < pass.passes(); ++i){
+        pass.set_current_pass(i);
+        pass.apply_program(program, false);
 
         bool valid = true;
 
@@ -70,7 +71,7 @@ void apply_pass(std::shared_ptr<ast::Pass> pass, ast::SourceFile& program, std::
             try {
                 if(auto* ptr = boost::get<ast::TemplateFunctionDeclaration>(&block)){
                     if(!ptr->is_template()){
-                        pass->apply_function(*ptr);
+                        pass.apply_function(*ptr);
                     }
                 } else if(auto* ptr = boost::get<ast::struct_definition>(&block)){
                     if(!ptr->is_template_declaration()){
@@ -78,7 +79,7 @@ void apply_pass(std::shared_ptr<ast::Pass> pass, ast::SourceFile& program, std::
                     }
                 }
             } catch (const SemanticalException& e){
-                if(!configuration->option_defined("quiet")){
+                if(!configuration.option_defined("quiet")){
                     output_exception(e, program.context);
                 }
 
@@ -90,6 +91,8 @@ void apply_pass(std::shared_ptr<ast::Pass> pass, ast::SourceFile& program, std::
             throw TerminationException();
         }
     }
+
+    LOG<Info>("Passes") << "Finished running (standard) pass \"" << pass.name() << "\"" << log::endl;
 }
 
 template<typename Pass>
@@ -166,37 +169,58 @@ void ast::PassManager::init_passes(){
     passes.push_back(make_pass<ast::WarningsPass>("Warnings", template_engine, platform, configuration, pool));
 }
 
-void ast::PassManager::function_instantiated(ast::TemplateFunctionDeclaration& function, const std::string& context){
-    LOG<Info>("Passes") << "Apply passes to instantiated function \"" << function.functionName << "\"" << " in context " << context << log::endl;
+void ast::PassManager::apply_function_instantiated(Pass & pass, ast::TemplateFunctionDeclaration & function, const std::string & context) {
+    for (unsigned int i = 0; i < pass.passes(); ++i) {
+        LOG<Info>("Passes") << "Run (template) pass \"" << pass.name() << "\":" << i << log::endl;
 
-    for(auto& pass : applied_passes){
-        for(unsigned int i = 0; i < pass->passes(); ++i){
-            LOG<Info>("Passes") << "Run pass \"" << pass->name() << "\":" << i << log::endl;
-            program_.context->stats().inc_counter("passes");
+        program_.context->stats().inc_counter("passes");
 
-            pass->set_current_pass(i);
-            pass->apply_program(program_, true);
+        pass.set_current_pass(i);
+        pass.apply_program(program_, true);
 
-            if(context.empty()){
-                pass->apply_function(function);
-            } else {
-                for(auto& block : program_){
-                    if(auto* struct_type = boost::get<ast::struct_definition>(&block)){
-                        if(!struct_type->is_template_declaration() && struct_type->struct_type->mangle() == context){
-                            pass->apply_struct(*struct_type, true);
-                            pass->apply_struct_function(function);
+        if (context.empty()) {
+            pass.apply_function(function);
+        } else {
+            for (auto & block : program_) {
+                if (auto * struct_type = boost::get<ast::struct_definition>(&block)) {
+                    if (!struct_type->is_template_declaration() && struct_type->struct_type->mangle() == context) {
+                        pass.apply_struct(*struct_type, true);
+                        pass.apply_struct_function(function);
 
-                            break;
-                        }
+                        break;
                     }
                 }
             }
         }
+
+        LOG<Info>("Passes") << "Finished running (template) pass \"" << pass.name() << "\":" << i << log::endl;
+    }
+}
+
+void ast::PassManager::apply_struct_instantiated(Pass & pass, ast::struct_definition & struct_) {
+    for (unsigned int i = 0; i < pass.passes(); ++i) {
+        LOG<Info>("Passes") << "Run (template) pass \"" << pass.name() << "\":" << i << log::endl;
+
+        program_.context->stats().inc_counter("passes");
+
+        pass.set_current_pass(i);
+        pass.apply_program(program_, true);
+        apply_pass(pass, struct_);
+
+        LOG<Info>("Passes") << "Finished running (template) pass \"" << pass.name() << "\":" << i << log::endl;
+    }
+}
+
+void ast::PassManager::function_instantiated(ast::TemplateFunctionDeclaration& function, const std::string& context){
+    LOG<Info>("Passes") << "Apply passes to instantiated function \"" << function.functionName << "\"" << " in context " << context << log::endl;
+
+    for(auto& pass : applied_passes){
+        apply_function_instantiated(*pass, function, context);
     }
 
     LOG<Info>("Passes") << "Passes applied to instantiated function \"" << function.functionName << "\"" << " in context " << context << log::endl;
 
-    functions_instantiated.push_back(std::make_pair(context, function));
+    functions_instantiated.emplace_back(context, function);
 }
 
 void ast::PassManager::struct_instantiated(ast::struct_definition& struct_){
@@ -207,14 +231,7 @@ void ast::PassManager::struct_instantiated(ast::struct_definition& struct_){
     inc_depth();
 
     for(auto& pass : applied_passes){
-        for(unsigned int i = 0; i < pass->passes(); ++i){
-            LOG<Info>("Passes") << "Run pass \"" << pass->name() << "\":" << i << log::endl;
-            program_.context->stats().inc_counter("passes");
-
-            pass->set_current_pass(i);
-            pass->apply_program(program_, true);
-            apply_pass(pass, struct_);
-        }
+        apply_struct_instantiated(*pass, struct_);
     }
 
     dec_depth();
@@ -251,40 +268,55 @@ void ast::PassManager::run_passes(){
                 //It is up to the simple pass to recurse into the program
                 pass->apply_program(program_, false);
             }
-        }
-        //Normal pass are applied until all function and structures have been handled
-        else {
-            //The next passes will have to apply it again to fresh functions
-            applied_passes.push_back(pass);
 
-            apply_pass(pass, program_, configuration);
+            LOG<Info>("Passes") << "Finished running simple pass \"" << pass->name() << "\"" << log::endl;
+        } else {
+            // Normal pass are applied until all function and structures have been handled
+            // Any instantiation will go through all previous passes
+            apply_pass(*pass, program_, *configuration);
 
-            //Add the instantiated class and function templates to the actual program
+            while (!class_instantiated.empty() || !functions_instantiated.empty()) {
+                auto new_classes = class_instantiated;
+                auto new_functions = functions_instantiated;
 
-            for(auto& struct_ : class_instantiated){
-                program_.emplace_back(struct_);
-            }
+                class_instantiated.clear();
+                functions_instantiated.clear();
 
-            for(auto& function_pair : functions_instantiated){
-                auto& context = function_pair.first;
-                auto& function = function_pair.second;
+                // Apply the current pass to instantiated structures
+                for(auto& struct_ : new_classes){
+                    apply_struct_instantiated(*pass, struct_);
+                }
 
-                if(context.empty()){
-                    program_.emplace_back(function);
-                } else {
-                    for(auto& block : program_){
-                        if(auto* struct_type = boost::get<ast::struct_definition>(&block)){
-                            if(!struct_type->is_template_declaration() && struct_type->struct_type->mangle() == context){
-                                struct_type->blocks.emplace_back(function);
-                                break;
+                // Apply the current pass to instantiated functions
+                for(auto& [context, function] : new_functions){
+                    apply_function_instantiated(*pass, function, context);
+                }
+
+                //Add the instantiated class and function templates to the actual program
+
+                for(auto& struct_ : new_classes){
+                    program_.emplace_back(struct_);
+                }
+
+                for(auto& [context, function] : new_functions){
+                    if(context.empty()){
+                        program_.emplace_back(function);
+                    } else {
+                        for(auto& block : program_){
+                            if(auto* struct_type = boost::get<ast::struct_definition>(&block)){
+                                if(!struct_type->is_template_declaration() && struct_type->struct_type->mangle() == context){
+                                    struct_type->blocks.emplace_back(function);
+                                    break;
+                                }
                             }
                         }
                     }
                 }
             }
 
-            class_instantiated.clear();
-            functions_instantiated.clear();
+            //The next passes will have to apply it again to fresh functions
+            applied_passes.push_back(pass);
+
         }
     }
 }
