@@ -28,51 +28,62 @@ void ast::StructureCollectionPass::apply_struct(ast::struct_definition& struct_,
         return;
     }
 
-    if(struct_.is_template_instantation()){
-        std::vector<std::shared_ptr<const eddic::Type>> template_types;
+    std::vector<std::shared_ptr<const eddic::Type>> template_types;
 
-        ast::TypeTransformer transformer(context);
+    // 0. Prepare the mangled named
+
+    std::string mangled_name;
+    if(struct_.is_template_instantation()){
+        ast::TypeTransformer transformer(*context);
 
         for(auto& type : struct_.inst_template_types){
             template_types.push_back(visit(transformer, type));
         }
 
-        struct_.struct_type = new_template_type(context, struct_.name, template_types);
+        mangled_name = mangle_template_type(struct_.name, template_types);
     } else {
-        struct_.struct_type = new_type(context, struct_.name, false);
+        mangled_name = mangle_custom_type(struct_.name);
     }
 
-    //Annotate functions with the parent struct
+    // 1. Register the structure
+
+    if (context->struct_exists(mangled_name)) {
+        context->error_handler.semantical_exception("The structure " + mangled_name + " has already been defined", struct_);
+    }
+
+    context->add_struct(std::make_shared<eddic::Struct>(mangled_name));
+
+    // 2. Create the type itself
+
+    if(struct_.is_template_instantation()){
+        struct_.struct_type = new_template_type(*context, struct_.name, template_types);
+    } else {
+        struct_.struct_type = new_type(*context, struct_.name, false);
+    }
+
+    // 3. Annotate functions with the parent struct
+    
     for(auto& block : struct_.blocks){
         if(auto* ptr = boost::get<ast::TemplateFunctionDeclaration>(&block)){
             if(!ptr->is_template()){
-                auto& function = *ptr;
+                const auto& function = *ptr;
 
                 if(function.context){
                     function.context->struct_type = struct_.struct_type;
                 }
             }
         } else if(auto* ptr = boost::get<ast::Constructor>(&block)){
-            auto& function = *ptr;
+            const auto& function = *ptr;
 
             if(function.context){
                 function.context->struct_type = struct_.struct_type;
             }
         } else if(auto* ptr = boost::get<ast::Destructor>(&block)){
-            auto& function = *ptr;
+            const auto& function = *ptr;
 
             if(function.context){
                 function.context->struct_type = struct_.struct_type;
             }
         }
     }
-
-    auto mangled_name = struct_.struct_type->mangle();
-
-    if(context->struct_exists(mangled_name)){
-        context->error_handler.semantical_exception("The structure " + mangled_name + " has already been defined", struct_);
-    }
-
-    auto signature = std::make_shared<eddic::Struct>(mangled_name);
-    context->add_struct(signature);
 }
