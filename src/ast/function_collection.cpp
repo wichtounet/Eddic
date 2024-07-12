@@ -19,11 +19,13 @@
 #include "ast/TypeTransformer.hpp"
 #include "ast/ASTVisitor.hpp"
 #include "ast/GetTypeVisitor.hpp"
+#include "ast/TemplateEngine.hpp"
 
 using namespace eddic;
 
 void ast::FunctionCollectionPass::apply_function(ast::TemplateFunctionDeclaration& declaration){
-    auto return_type = visit(ast::TypeTransformer(context), declaration.returnType);
+    template_engine->check_type(declaration.returnType, declaration);
+    auto return_type = visit(ast::TypeTransformer(*context), declaration.returnType);
 
     if(return_type->is_array()){
         context->error_handler.semantical_exception("Cannot return array from function", declaration);
@@ -31,7 +33,8 @@ void ast::FunctionCollectionPass::apply_function(ast::TemplateFunctionDeclaratio
 
     std::vector<Parameter> parameters;
     for(auto& param : declaration.parameters){
-        auto paramType = visit(ast::TypeTransformer(context), param.parameterType);
+        template_engine->check_type(param.parameterType, declaration);
+        auto paramType = visit(ast::TypeTransformer(*context), param.parameterType);
         parameters.emplace_back(param.parameterName, paramType);
     }
 
@@ -64,7 +67,8 @@ void ast::FunctionCollectionPass::apply_struct_function(ast::TemplateFunctionDec
 void ast::FunctionCollectionPass::apply_struct_constructor(ast::Constructor& constructor){
     std::vector<Parameter> parameters;
     for(auto& param : constructor.parameters){
-        auto paramType = visit(ast::TypeTransformer(context), param.parameterType);
+        template_engine->check_type(param.parameterType, constructor);
+        auto paramType = visit(ast::TypeTransformer(*context), param.parameterType);
         parameters.emplace_back(param.parameterName, paramType);
     }
 
@@ -87,7 +91,8 @@ void ast::FunctionCollectionPass::apply_struct_destructor(ast::Destructor& destr
     //This is necessary to collect the "this" parameter
     std::vector<Parameter> parameters;
     for(auto& param : destructor.parameters){
-        auto paramType = visit(ast::TypeTransformer(context), param.parameterType);
+        template_engine->check_type(param.parameterType, destructor);
+        auto paramType = visit(ast::TypeTransformer(*context), param.parameterType);
         parameters.emplace_back(param.parameterName, paramType);
     }
 

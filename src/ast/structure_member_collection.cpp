@@ -20,6 +20,7 @@
 #include "ast/structure_member_collection.hpp"
 #include "ast/SourceFile.hpp"
 #include "ast/TypeTransformer.hpp"
+#include "ast/TemplateEngine.hpp"
 
 using namespace eddic;
 
@@ -41,7 +42,8 @@ void ast::StructureMemberCollectionPass::apply_struct(ast::struct_definition& st
 
             names.push_back(member.name);
 
-            auto member_type = visit(ast::TypeTransformer(context), member.type);
+            template_engine->check_type(member.type, member);
+            auto member_type = visit(ast::TypeTransformer(*context), member.type);
             signature->members.emplace_back(member.name, member_type);
         } else if(auto* ptr = boost::get<ast::ArrayDeclaration>(&block)){
             auto& member = *ptr;
