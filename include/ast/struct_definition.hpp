@@ -26,27 +26,19 @@
 #include "ast/Destructor.hpp"
 #include "ast/TemplateFunctionDeclaration.hpp"
 
-namespace eddic {
-
-namespace ast {
+namespace eddic::ast {
 
 /*!
  * \typedef StructBlock
  * \brief A block inside a structure.
  */
-typedef x3::variant<
-            MemberDeclaration,
-            ArrayDeclaration,
-            Constructor,
-            Destructor,
-            TemplateFunctionDeclaration
-        > StructBlock;
+using StructBlock = x3::variant<MemberDeclaration, ArrayDeclaration, Constructor, Destructor, TemplateFunctionDeclaration>;
 
 struct struct_definition : x3::file_position_tagged {
     bool standard = false;
-    std::string header = "";
+    std::string header;
 
-    std::shared_ptr<const eddic::Type> struct_type = nullptr;
+    std::shared_ptr<const eddic::Type> struct_type;
 
     std::vector<std::string> decl_template_types;
     std::string name;
@@ -55,19 +47,16 @@ struct struct_definition : x3::file_position_tagged {
 
     std::vector<ast::Type> inst_template_types;
 
-
-    bool is_template_declaration(){
+    bool is_template_declaration() const{
         return !decl_template_types.empty();
     }
 
-    bool is_template_instantation(){
+    bool is_template_instantation() const{
         return !inst_template_types.empty();
     }
 };
 
-} //end of ast
-
-} //end of eddic
+} // namespace eddic::ast
 
 //Adapt the struct for the AST
 BOOST_FUSION_ADAPT_STRUCT(
