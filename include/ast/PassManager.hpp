@@ -40,6 +40,9 @@ class PassManager {
         }
 
     private:
+        void apply_function_instantiated(Pass & pass, ast::TemplateFunctionDeclaration& function, const std::string& context);
+        void apply_struct_instantiated(Pass & pass, ast::struct_definition& struct_);
+
         unsigned int template_depth = 0;
 
         std::shared_ptr<ast::TemplateEngine> template_engine;
