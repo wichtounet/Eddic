@@ -26,6 +26,8 @@ class Parameter;
  * \return The mangled type. 
  */
 std::string mangle(std::shared_ptr<const Type> type);
+std::string mangle_custom_type(const std::string & type);
+std::string mangle_template_type(const std::string & type, const std::vector<std::shared_ptr<const Type>> & sub_types);
 
 /*!
  * \brief Return the signature of the function from the mangled representation. 

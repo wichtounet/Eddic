@@ -47,34 +47,40 @@ std::string eddic::mangle(std::shared_ptr<const Type> type){
     } 
 
     if(type->is_custom_type()){
-        std::ostringstream ss;
-
-        ss << "U";
-        ss << type->type().length();
-        ss << type->type();
-
-        return ss.str();
+        return mangle_custom_type(type->type());
     }
 
     if(type->is_template_type()){
-        std::ostringstream ss;
-
-        ss << "T";
-        ss << type->type().length();
-        ss << type->type();
-
-        auto types = type->template_types();
-
-        ss << types.size();
-
-        for(auto& sub_type : types){
-            ss << sub_type->mangle();
-        }
-
-        return ss.str();
+        return mangle_template_type(type->type(), type->template_types());
     }
 
     cpp_unreachable("Invalid type");
+}
+
+std::string eddic::mangle_custom_type(const std::string & type){
+    std::ostringstream ss;
+
+    ss << "U";
+    ss << type.size();
+    ss << type;
+
+    return ss.str();
+}
+
+std::string eddic::mangle_template_type(const std::string & type, const std::vector<std::shared_ptr<const Type>> & sub_types) {
+    std::ostringstream ss;
+
+    ss << "T";
+    ss << type.length();
+    ss << type;
+
+    ss << sub_types.size();
+
+    for (const auto & sub_type : sub_types) {
+        ss << sub_type->mangle();
+    }
+
+    return ss.str();
 }
 
 std::string eddic::mangle(const std::string& name, const std::vector<Parameter>& parameters, std::shared_ptr<const Type> struct_type){
