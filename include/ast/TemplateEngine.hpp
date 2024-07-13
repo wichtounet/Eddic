@@ -13,12 +13,11 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "ast/VariableType.hpp"
 #include "ast/source_def.hpp"
 #include "parser_x3/error_reporting.hpp"
 
-namespace eddic {
-
-namespace ast {
+namespace eddic::ast {
 
 class PassManager;
 
@@ -28,11 +27,11 @@ struct TemplateEngine {
 
         using function_template_map = std::unordered_map<std::string, std::unordered_set<std::string>>;
 
-        typedef std::unordered_multimap<std::string, std::vector<ast::Type>> LocalFunctionInstantiationMap;
-        typedef std::unordered_map<std::string, LocalFunctionInstantiationMap> FunctionInstantiationMap;
+        using LocalFunctionInstantiationMap = std::unordered_multimap<std::string, std::vector<ast::Type>>;
+        using FunctionInstantiationMap      = std::unordered_map<std::string, LocalFunctionInstantiationMap>;
 
-        typedef std::unordered_multimap<std::string, ast::struct_definition*> ClassTemplateMap;
-        typedef std::unordered_multimap<std::string, std::vector<ast::Type>> ClassInstantiationMap;
+        using ClassTemplateMap      = std::unordered_multimap<std::string, ast::struct_definition *>;
+        using ClassInstantiationMap = std::unordered_multimap<std::string, std::vector<ast::Type>>;
 
         void check_function(ast::FunctionCall& function_call);
         void check_member_function(std::shared_ptr<const eddic::Type> left, ast::Operation& operation, x3::file_position_tagged& position);
@@ -58,8 +57,6 @@ struct TemplateEngine {
         bool is_class_instantiated(const std::string& name, const std::vector<ast::Type>& template_types);
 };
 
-} //end of ast
-
-} //end of eddic
+} // namespace eddic::ast
 
 #endif
