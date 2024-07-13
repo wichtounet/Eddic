@@ -19,6 +19,7 @@
 #include "Platform.hpp"
 #include "GlobalContext.hpp"
 #include "EDDIFrontEnd.hpp"
+#include "logging.hpp"
 
 #include "mtac/Program.hpp"
 
@@ -84,6 +85,9 @@ inline std::shared_ptr<eddic::Configuration> parse_options(const std::string& so
     BOOST_REQUIRE(configuration);
 
     delete[] argv;
+
+    // If necessary for debugging
+    // eddic::configure_logging(4);
 
     return configuration;
 }
