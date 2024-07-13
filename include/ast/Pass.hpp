@@ -24,38 +24,38 @@ namespace ast {
 
 struct TemplateEngine;
 
-class Pass {
-    public:
-        virtual void apply_program(ast::SourceFile& program, bool indicator);
-        virtual void apply_function(ast::TemplateFunctionDeclaration& function);
-        virtual void apply_struct(ast::struct_definition& struct_, bool indicator);
-        virtual void apply_struct_function(ast::TemplateFunctionDeclaration& function);
-        virtual void apply_struct_constructor(ast::Constructor& constructor);
-        virtual void apply_struct_destructor(ast::Destructor& destructor);
+struct Pass {
+    virtual void apply_program(ast::SourceFile &, bool) {}
+    virtual void apply_program_post(ast::SourceFile &, bool) {}
+    virtual void apply_function(ast::TemplateFunctionDeclaration &) {}
+    virtual void apply_struct(ast::struct_definition &, bool) {}
+    virtual void apply_struct_function(ast::TemplateFunctionDeclaration &) {}
+    virtual void apply_struct_constructor(ast::Constructor &) {}
+    virtual void apply_struct_destructor(ast::Destructor &) {}
 
-        void set_string_pool(std::shared_ptr<StringPool> pool);
-        void set_template_engine(std::shared_ptr<ast::TemplateEngine> template_engine);
-        void set_platform(Platform platform);
-        void set_configuration(std::shared_ptr<Configuration> configuration);
-        void set_current_pass(unsigned int i);
-        void set_name(const std::string& name);
-        std::string name();
+    void        set_string_pool(std::shared_ptr<StringPool> pool);
+    void        set_template_engine(std::shared_ptr<ast::TemplateEngine> template_engine);
+    void        set_platform(Platform platform);
+    void        set_configuration(std::shared_ptr<Configuration> configuration);
+    void        set_current_pass(unsigned int i);
+    void        set_name(const std::string & name);
+    std::string name();
 
-        virtual unsigned int passes();
-        virtual bool is_simple();
+    virtual unsigned int passes();
+    virtual bool         is_simple();
 
-    protected:
-        unsigned int pass = 0;
-        std::string pass_name;
+protected:
+    unsigned int pass = 0;
+    std::string  pass_name;
 
-        std::shared_ptr<StringPool> pool;
-        std::shared_ptr<ast::TemplateEngine> template_engine;
-        Platform platform;
-        std::shared_ptr<Configuration> configuration;
+    std::shared_ptr<StringPool>          pool;
+    std::shared_ptr<ast::TemplateEngine> template_engine;
+    Platform                             platform;
+    std::shared_ptr<Configuration>       configuration;
 };
 
-} //end of ast
+} // namespace ast
 
-} //end of eddic
+} // namespace eddic
 
 #endif

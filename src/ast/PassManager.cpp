@@ -86,6 +86,8 @@ void apply_pass(ast::Pass & pass, ast::SourceFile& program, Configuration & conf
             }
         }
 
+        pass.apply_program_post(program, false);
+
         if(!valid){
             throw TerminationException();
         }
@@ -185,6 +187,8 @@ void ast::PassManager::apply_function_instantiated(Pass & pass, ast::TemplateFun
             }
         }
 
+        pass.apply_program_post(program_, true);
+
         LOG<Info>("Passes") << "Finished running (template) pass \"" << pass.name() << "\":" << i << log::endl;
     }
 }
@@ -198,6 +202,7 @@ void ast::PassManager::apply_struct_instantiated(Pass & pass, ast::struct_defini
         pass.set_current_pass(i);
         pass.apply_program(program_, true);
         apply_pass(pass, struct_);
+        pass.apply_program_post(program_, true);
 
         LOG<Info>("Passes") << "Finished running (template) pass \"" << pass.name() << "\":" << i << log::endl;
     }

@@ -46,27 +46,3 @@ void ast::Pass::set_current_pass(unsigned int i){
 bool ast::Pass::is_simple(){
     return false;
 }
-
-void ast::Pass::apply_program(ast::SourceFile&, bool){
-    //Do nothing by default
-}
-
-void ast::Pass::apply_function(ast::TemplateFunctionDeclaration&){
-    //Do nothing by default
-}
-
-void ast::Pass::apply_struct(ast::struct_definition&, bool){
-    //Do nothing by default
-}
-
-void ast::Pass::apply_struct_function(ast::TemplateFunctionDeclaration&){
-    //Do nothing by default
-}
-
-void ast::Pass::apply_struct_constructor(ast::Constructor&){
-    //Do nothing by default
-}
-
-void ast::Pass::apply_struct_destructor(ast::Destructor&){
-    //Do nothing by default
-}
