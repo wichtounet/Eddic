@@ -27,7 +27,7 @@ namespace ast {
  */
 class TypeTransformer : public boost::static_visitor<std::shared_ptr<const eddic::Type>> {
     public:
-        TypeTransformer(std::shared_ptr<GlobalContext> context) : context(context) {}
+        explicit TypeTransformer(GlobalContext & context, bool standard_only = false) : context(context), standard_only(standard_only) {}
 
         std::shared_ptr<const eddic::Type> operator()(const ast::SimpleType& type) const;
         std::shared_ptr<const eddic::Type> operator()(const ast::ArrayType& type) const;
@@ -35,7 +35,8 @@ class TypeTransformer : public boost::static_visitor<std::shared_ptr<const eddic
         std::shared_ptr<const eddic::Type> operator()(const ast::TemplateType& type) const;
 
     private:
-        std::shared_ptr<GlobalContext> context;
+        GlobalContext & context;
+        bool standard_only = false;
 };
 
 } //end of ast

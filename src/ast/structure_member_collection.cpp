@@ -29,7 +29,7 @@ void ast::StructureMemberCollectionPass::apply_struct(ast::struct_definition& st
         return;
     }
 
-    auto signature = context->get_struct(struct_.struct_type->mangle());
+    auto signature = context->get_struct(struct_.mangled_name);
     std::vector<std::string> names;
 
     for(auto& block : struct_.blocks){
@@ -55,7 +55,7 @@ void ast::StructureMemberCollectionPass::apply_struct(ast::struct_definition& st
 
             names.push_back(name);
 
-            auto data_member_type = visit(ast::TypeTransformer(context), member.arrayType);
+            auto data_member_type = visit(ast::TypeTransformer(*context), member.arrayType);
 
             if(data_member_type->is_array()){
                 context->error_handler.semantical_exception("Multidimensional arrays are not permitted", member);
@@ -69,14 +69,12 @@ void ast::StructureMemberCollectionPass::apply_struct(ast::struct_definition& st
         }
     }
 
-    std::sort(signature->members.begin(), signature->members.end(),
-            [](const Member& lhs, const Member& rhs){
-                if(lhs.type == CHAR || lhs.type == BOOL){
-                    return false;
-                } else if(rhs.type == CHAR || rhs.type == BOOL){
-                    return true;
-                } else {
-                    return false;
-                }
-            });
+    // Put small types first
+    std::sort(signature->members.begin(), signature->members.end(), [](const Member & lhs, const Member & rhs) {
+        if (lhs.type == CHAR || lhs.type == BOOL) {
+            return false;
+        }
+
+        return rhs.type == CHAR || rhs.type == BOOL;
+    });
 }

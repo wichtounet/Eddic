@@ -16,25 +16,41 @@ using namespace eddic;
 
 /* Standard Types */
 
-std::shared_ptr<const Type> eddic::BOOL = std::make_shared<StandardType>(BaseType::BOOL, false);
-std::shared_ptr<const Type> eddic::INT = std::make_shared<StandardType>(BaseType::INT, false);
-std::shared_ptr<const Type> eddic::CHAR = std::make_shared<StandardType>(BaseType::CHAR, false);
-std::shared_ptr<const Type> eddic::FLOAT = std::make_shared<StandardType>(BaseType::FLOAT, false);
-std::shared_ptr<const Type> eddic::STRING = std::make_shared<StandardType>(BaseType::STRING, false);
-std::shared_ptr<const Type> eddic::VOID = std::make_shared<StandardType>(BaseType::VOID, false);
+std::shared_ptr<const Type> eddic::BOOL;
+std::shared_ptr<const Type> eddic::INT;
+std::shared_ptr<const Type> eddic::CHAR;
+std::shared_ptr<const Type> eddic::FLOAT;
+std::shared_ptr<const Type> eddic::STRING;
+std::shared_ptr<const Type> eddic::VOID;
 
 /* Const versions */
 
-const std::shared_ptr<const Type> CBOOL = std::make_shared<StandardType>(BaseType::BOOL, true);
-const std::shared_ptr<const Type> CINT = std::make_shared<StandardType>(BaseType::INT, true);
-const std::shared_ptr<const Type> CCHAR = std::make_shared<StandardType>(BaseType::CHAR, true);
-const std::shared_ptr<const Type> CFLOAT = std::make_shared<StandardType>(BaseType::FLOAT, true);
-const std::shared_ptr<const Type> CSTRING = std::make_shared<StandardType>(BaseType::STRING, true);
-const std::shared_ptr<const Type> CVOID = std::make_shared<StandardType>(BaseType::VOID, true);
+std::shared_ptr<const Type> CBOOL;
+std::shared_ptr<const Type> CINT;
+std::shared_ptr<const Type> CCHAR;
+std::shared_ptr<const Type> CFLOAT;
+std::shared_ptr<const Type> CSTRING;
+std::shared_ptr<const Type> CVOID;
+
+void eddic::init_global_types(Platform platform) {
+    BOOL   = std::make_shared<StandardType>(platform, BaseType::BOOL, false);
+    INT    = std::make_shared<StandardType>(platform, BaseType::INT, false);
+    CHAR   = std::make_shared<StandardType>(platform, BaseType::CHAR, false);
+    FLOAT  = std::make_shared<StandardType>(platform, BaseType::FLOAT, false);
+    STRING = std::make_shared<StandardType>(platform, BaseType::STRING, false);
+    VOID   = std::make_shared<StandardType>(platform, BaseType::VOID, false);
+
+    /* Const versions */
+
+    CBOOL   = std::make_shared<StandardType>(platform, BaseType::BOOL, true);
+    CINT    = std::make_shared<StandardType>(platform, BaseType::INT, true);
+    CCHAR   = std::make_shared<StandardType>(platform, BaseType::CHAR, true);
+    CFLOAT  = std::make_shared<StandardType>(platform, BaseType::FLOAT, true);
+    CSTRING = std::make_shared<StandardType>(platform, BaseType::STRING, true);
+    CVOID   = std::make_shared<StandardType>(platform, BaseType::VOID, true);
+}
 
 /* Implementation of Type */
-
-Type::Type() {}
 
 bool Type::is_array() const {
     return false;
@@ -66,10 +82,6 @@ bool Type::is_const() const {
 
 bool Type::is_template_type() const {
     return false;
-}
-
-unsigned int Type::size(Platform) const {
-    cpp_unreachable("Not specialized type");
 }
 
 unsigned int Type::elements() const {
@@ -132,7 +144,8 @@ bool eddic::operator!=(std::shared_ptr<const Type> lhs, std::shared_ptr<const Ty
 
 /* Implementation of StandardType  */
 
-StandardType::StandardType(BaseType type, bool const_) : base_type(type), const_(const_) {}
+StandardType::StandardType(Platform platform, BaseType type, bool const_) :
+        Type(getPlatformDescriptor(platform)->size_of(type)), base_type(type), const_(const_) {}
 
 BaseType StandardType::base() const {
     return base_type;
@@ -146,15 +159,10 @@ bool StandardType::is_const() const {
     return const_;
 }
 
-unsigned int StandardType::size(Platform platform) const {
-    auto descriptor = getPlatformDescriptor(platform);
-    return descriptor->size_of(base());
-}
-
 /* Implementation of CustomType */
 
-CustomType::CustomType(std::shared_ptr<GlobalContext> context, const std::string& type) :
-    context(context), m_type(type) {}
+CustomType::CustomType(const GlobalContext & context, const std::string & type) :
+        Type(context.total_size_of_struct(context.get_struct_safe(mangle_custom_type(type)))), m_type(type) {}
 
 std::string CustomType::type() const {
     return m_type;
@@ -164,14 +172,10 @@ bool CustomType::is_custom_type() const {
     return true;
 }
 
-unsigned int CustomType::size(Platform) const {
-    return context->total_size_of_struct(context->get_struct(shared_from_this()));
-}
-
 /* Implementation of ArrayType  */
 
-ArrayType::ArrayType(std::shared_ptr<const Type> sub_type) : sub_type(sub_type) {}
-ArrayType::ArrayType(std::shared_ptr<const Type> sub_type, int size) : sub_type(sub_type), m_elements(size) {}
+ArrayType::ArrayType(const std::shared_ptr<const Type> & sub_type) : Type(INT->size()), sub_type(sub_type) {}
+ArrayType::ArrayType(const std::shared_ptr<const Type> & sub_type, int size) : Type(sub_type->size() * size + INT->size()), sub_type(sub_type), m_elements(size) {}
 
 unsigned int ArrayType::elements() const {
     assert(has_elements());
@@ -191,17 +195,9 @@ bool ArrayType::is_array() const {
     return true;
 }
 
-unsigned int ArrayType::size(Platform platform) const {
-    if(has_elements()){
-        return data_type()->size(platform) * elements() + INT->size(platform);
-    } else {
-        return INT->size(platform);
-    }
-}
-
 /* Implementation of PointerType  */
 
-PointerType::PointerType(std::shared_ptr<const Type> sub_type) : sub_type(sub_type) {}
+PointerType::PointerType(const std::shared_ptr<const Type> & sub_type) : Type(INT->size()), sub_type(sub_type) {}
 
 std::shared_ptr<const Type> PointerType::data_type() const {
     return sub_type;
@@ -211,14 +207,12 @@ bool PointerType::is_pointer() const {
     return true;
 }
 
-unsigned int PointerType::size(Platform platform) const {
-    return INT->size(platform);
-}
-
 /* Implementation of TemplateType  */
 
-TemplateType::TemplateType(std::shared_ptr<GlobalContext> context, std::string main_type, std::vector<std::shared_ptr<const Type>> sub_types) :
-    context(context), main_type(main_type), sub_types(sub_types) {}
+TemplateType::TemplateType(const GlobalContext &           context,
+                           const std::string &                              main_type,
+                           const std::vector<std::shared_ptr<const Type>> & sub_types) :
+        Type(context.total_size_of_struct(context.get_struct_safe(mangle_template_type(main_type, sub_types)))), main_type(main_type), sub_types(sub_types) {}
 
 std::string TemplateType::type() const {
     return main_type;
@@ -232,13 +226,9 @@ bool TemplateType::is_template_type() const {
     return true;
 }
 
-unsigned int TemplateType::size(Platform) const {
-    return context->total_size_of_struct(context->get_struct(shared_from_this()));
-}
-
 /* Implementation of factories  */
 
-std::shared_ptr<const Type> eddic::new_type(std::shared_ptr<GlobalContext> context, const std::string& type, bool const_){
+std::shared_ptr<const Type> eddic::new_type(const GlobalContext & context, const std::string& type, bool const_){
     //Parse standard and custom types
     if(is_standard_type(type)){
         if(const_){
@@ -288,7 +278,7 @@ std::shared_ptr<const Type> eddic::new_pointer_type(std::shared_ptr<const Type> 
     return std::make_shared<PointerType>(data_type);
 }
 
-std::shared_ptr<const Type> eddic::new_template_type(std::shared_ptr<GlobalContext> context, std::string data_type, std::vector<std::shared_ptr<const Type>> template_types){
+std::shared_ptr<const Type> eddic::new_template_type(const GlobalContext & context, std::string data_type, std::vector<std::shared_ptr<const Type>> template_types){
     return std::make_shared<TemplateType>(context, data_type, template_types);
 }
 

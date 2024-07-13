@@ -50,27 +50,25 @@ void optimize_ranges(std::vector<std::pair<int, int>>& memset_ranges){
 void ltac::alloc_stack_space(mtac::Program& program){
     timing_timer timer(program.context->timing(), "stack_space");
 
-    auto platform = program.context->target_platform();
-
     for(auto& function : program.functions){
         auto bb = function.entry_bb();
-        auto int_size = INT->size(platform);
+        auto int_size = INT->size();
 
         //Clear the stack variables
 
         std::vector<std::pair<int, int>> memset_ranges;
 
-        for(auto& var_pair : *function.context){
-            auto& var = var_pair.second;
+        for(const auto& var_pair : *function.context){
+            const auto& var = var_pair.second;
 
             if(var->position().isStack()){
                 auto type = var->type();
                 int position = var->position().offset();
 
                 if(type->is_array() && type->has_elements()){
-                    memset_ranges.emplace_back(position + int_size, type->data_type()->size(platform) * type->elements());
+                    memset_ranges.emplace_back(position + int_size, type->data_type()->size() * type->elements());
                 } else if(type->is_custom_type()){
-                    memset_ranges.emplace_back(position, type->size(platform));
+                    memset_ranges.emplace_back(position, type->size());
                 }
             }
         }
@@ -106,8 +104,8 @@ void ltac::alloc_stack_space(mtac::Program& program){
 
         //Set the sizes of arrays
 
-        for(auto& var_pair : *function.context){
-            auto& var = var_pair.second;
+        for(const auto& var_pair : *function.context){
+            const auto& var = var_pair.second;
 
             if(var->position().isStack()){
                 auto type = var->type();

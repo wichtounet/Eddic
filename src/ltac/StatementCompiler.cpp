@@ -374,8 +374,8 @@ std::tuple<std::shared_ptr<const Type>, bool, unsigned int> ltac::StatementCompi
         //Align stack pointer to the size of an INT
 
         auto total = function_stack_size(param.function());
-        if(total % INT->size(platform) != 0){
-            int padding = INT->size(platform) - (total % INT->size(platform));
+        if(total % INT->size() != 0){
+            int padding = INT->size() - (total % INT->size());
 
             bb->emplace_back_low(ltac::Operator::SUB, ltac::SP, padding);
         }
@@ -577,24 +577,24 @@ int ltac::StatementCompiler::function_stack_size(eddic::Function& function){
 
         if(type->is_array()){
             //Passing an array is just passing an address
-            total += INT->size(platform);
+            total += INT->size();
         } else {
             if(mtac::is_single_int_register(type)){
                 //If the parameter is allocated in a register, there is no need to deallocate stack space for it
                 if(maxInt > 0){
                     --maxInt;
                 } else {
-                    total += type->size(platform);
+                    total += type->size();
                 }
             } else if(mtac::is_single_float_register(type)){
                 //If the parameter is allocated in a register, there is no need to deallocate stack space for it
                 if(maxFloat > 0){
                     --maxFloat;
                 } else {
-                    total += type->size(platform);
+                    total += type->size();
                 }
             } else {
-                total += type->size(platform);
+                total += type->size();
             }
         }
     }
@@ -617,8 +617,8 @@ void ltac::StatementCompiler::compile_CALL(mtac::Quadruple& call){
 
     //Align stack pointer to the size of an INT
 
-    if(total % INT->size(platform) != 0){
-        const int padding = INT->size(platform) - (total % INT->size(platform));
+    if(total % INT->size() != 0){
+        const int padding = INT->size() - (total % INT->size());
         total += padding;
     }
 
@@ -849,7 +849,7 @@ void ltac::StatementCompiler::perform_div(mtac::Quadruple& quadruple){
     manager.copy(*quadruple.arg1, a_reg);
 
     bb->emplace_back_low(ltac::Operator::MOV, d_reg, a_reg);
-    bb->emplace_back_low(ltac::Operator::SHIFT_RIGHT, d_reg, static_cast<int>(INT->size(platform) * 8 - 1));
+    bb->emplace_back_low(ltac::Operator::SHIFT_RIGHT, d_reg, static_cast<int>(INT->size() * 8 - 1));
 
     if(mtac::isInt(*quadruple.arg2)){
         auto reg = manager.get_free_pseudo_reg();

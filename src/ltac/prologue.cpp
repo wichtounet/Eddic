@@ -118,16 +118,16 @@ void callee_save_registers(mtac::Function& function, mtac::basic_block_p bb, Pla
             ++it;
         }
 
-        for(auto& reg : function.use_registers()){
+        for(const auto& reg : function.use_registers()){
             if(callee_save(function.definition(), reg, platform, configuration)){
                 it = bb->l_statements.insert(it, ltac::Instruction(ltac::Operator::PUSH, reg));
                 ++it;
             }
         }
 
-        for(auto& float_reg : function.use_float_registers()){
+        for(const auto& float_reg : function.use_float_registers()){
             if(callee_save(function.definition(), float_reg, platform, configuration)){
-                it = bb->l_statements.insert(it, ltac::Instruction(ltac::Operator::SUB, ltac::SP, static_cast<int>(FLOAT->size(platform))));
+                it = bb->l_statements.insert(it, ltac::Instruction(ltac::Operator::SUB, ltac::SP, static_cast<int>(FLOAT->size())));
                 ++it;
                 it = bb->l_statements.insert(it, ltac::Instruction(ltac::Operator::FMOV, ltac::Address(ltac::SP, 0), float_reg));
                 ++it;
@@ -139,14 +139,14 @@ void callee_save_registers(mtac::Function& function, mtac::basic_block_p bb, Pla
 void callee_restore_registers(mtac::Function& function, mtac::basic_block_p bb, Platform platform, std::shared_ptr<Configuration> configuration){
     //Save registers for all other functions than main
     if(!function.is_main()){
-        for(auto& float_reg : boost::adaptors::reverse(function.use_float_registers())){
+        for(const auto& float_reg : boost::adaptors::reverse(function.use_float_registers())){
             if(callee_save(function.definition(), float_reg, platform, configuration)){
                 bb->emplace_back_low(ltac::Operator::FMOV, float_reg, ltac::Address(ltac::SP, 0));
-                bb->emplace_back_low(ltac::Operator::ADD, ltac::SP, static_cast<int>(FLOAT->size(platform)));
+                bb->emplace_back_low(ltac::Operator::ADD, ltac::SP, static_cast<int>(FLOAT->size()));
             }
         }
 
-        for(auto& reg : boost::adaptors::reverse(function.use_registers())){
+        for(const auto& reg : boost::adaptors::reverse(function.use_registers())){
             if(callee_save(function.definition(), reg, platform, configuration)){
                 bb->emplace_back_low(ltac::Operator::POP, reg);
             }
@@ -158,15 +158,15 @@ template<typename It>
 void callee_restore_registers(mtac::Function& function, It& it, Platform platform, std::shared_ptr<Configuration> configuration){
     //Save registers for all other functions than main
     if(!function.is_main()){
-        for(auto& reg : function.use_registers()){
+        for(const auto& reg : function.use_registers()){
             if(callee_save(function.definition(), reg, platform, configuration)){
                 it.insert(ltac::Instruction(ltac::Operator::POP, reg));
             }
         }
 
-        for(auto& float_reg : function.use_float_registers()){
+        for(const auto& float_reg : function.use_float_registers()){
             if(callee_save(function.definition(), float_reg, platform, configuration)){
-                it.insert(ltac::Instruction(ltac::Operator::ADD, ltac::SP, static_cast<int>(FLOAT->size(platform))));
+                it.insert(ltac::Instruction(ltac::Operator::ADD, ltac::SP, static_cast<int>(FLOAT->size())));
                 it.insert(ltac::Instruction(ltac::Operator::FMOV, float_reg, ltac::Address(ltac::SP, 0)));
             }
         }
@@ -222,14 +222,14 @@ void caller_save_registers(mtac::Function& function, eddic::Function& target_fun
             if(statement.op == ltac::Operator::PRE_PARAM){
                 statement.op = ltac::Operator::NOP;
 
-                for(auto& float_reg : boost::adaptors::reverse(function.use_float_registers())){
+                for(const auto& float_reg : boost::adaptors::reverse(function.use_float_registers())){
                     if(caller_save(function, target_function, float_reg, platform, configuration)){
                         pre_it = bb->l_statements.insert(pre_it, ltac::Instruction(ltac::Operator::FMOV, ltac::Address(ltac::SP, 0), float_reg));
-                        pre_it = bb->l_statements.insert(pre_it, ltac::Instruction(ltac::Operator::SUB, ltac::SP, static_cast<int>(FLOAT->size(platform))));
+                        pre_it = bb->l_statements.insert(pre_it, ltac::Instruction(ltac::Operator::SUB, ltac::SP, static_cast<int>(FLOAT->size())));
                     }
                 }
 
-                for(auto& reg : boost::adaptors::reverse(function.use_registers())){
+                for(const auto& reg : boost::adaptors::reverse(function.use_registers())){
                     if(caller_save(function, target_function, reg, platform, configuration)){
                         pre_it = bb->l_statements.insert(pre_it, ltac::Instruction(ltac::Operator::PUSH, reg));
                     }
@@ -285,14 +285,14 @@ void caller_cleanup(mtac::Function& function, eddic::Function& target_function, 
         }
     }
 
-    for(auto& float_reg : boost::adaptors::reverse(function.use_float_registers())){
+    for(const auto& float_reg : boost::adaptors::reverse(function.use_float_registers())){
         if(caller_save(function, target_function, float_reg, platform, configuration)){
             it.insert_after(ltac::Instruction(ltac::Operator::FMOV, float_reg, ltac::Address(ltac::SP, 0)));
-            it.insert_after(ltac::Instruction(ltac::Operator::ADD, ltac::SP, static_cast<int>(FLOAT->size(platform))));
+            it.insert_after(ltac::Instruction(ltac::Operator::ADD, ltac::SP, static_cast<int>(FLOAT->size())));
         }
     }
     
-    for(auto& reg : boost::adaptors::reverse(function.use_registers())){
+    for(const auto& reg : boost::adaptors::reverse(function.use_registers())){
         if(caller_save(function, target_function, reg, platform, configuration)){
             it.insert_after(ltac::Instruction(ltac::Operator::POP, reg));
         }
@@ -312,8 +312,8 @@ void ltac::generate_prologue_epilogue(mtac::Program& program, std::shared_ptr<Co
 
         //Align stack pointer to the size of an INT
 
-        if(size % INT->size(platform) != 0){
-            int padding = INT->size(platform) - (size % INT->size(platform));
+        if(size % INT->size() != 0){
+            int padding = INT->size() - (size % INT->size());
             size += padding;
         }
 

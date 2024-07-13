@@ -62,7 +62,8 @@ struct VariablesVisitor : public boost::static_visitor<> {
     }
 
     void visit_function(ast::TemplateFunctionDeclaration& declaration){
-        if(!declaration.is_template()){
+        // TODO Check whether this is necessary or not
+        /*if(!declaration.is_template()){
             template_engine->check_type(declaration.returnType, declaration);
 
             for(auto& parameter : declaration.parameters){
@@ -70,7 +71,7 @@ struct VariablesVisitor : public boost::static_visitor<> {
             }
 
             visit_each(*this, declaration.instructions);
-        }
+        }*/
     }
 
     void visit_function(ast::Constructor& declaration){

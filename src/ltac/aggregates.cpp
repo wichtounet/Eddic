@@ -22,14 +22,13 @@ void ltac::allocate_aggregates(mtac::Program& program){
     timing_timer timer(program.context->timing(), "aggregates_aloocation");
 
     auto global_context = program.context;
-    auto platform = global_context->target_platform();
 
     for(auto& function : program.functions){
         auto& function_context = function.context;
 
         //Consider only user functions
         if(function_context){
-            int current_position = -INT->size(platform); 
+            int current_position = -INT->size(); 
 
             auto escaped = mtac::escape_analysis(function);
 
@@ -37,13 +36,11 @@ void ltac::allocate_aggregates(mtac::Program& program){
                 auto position = variable->position();
                 auto type = variable->type();
 
-                if(
-                            !variable->is_reference() 
-                        &&  (position.is_temporary() || position.is_variable()) 
-                        &&  (type == STRING || type->is_template_type() || type->is_array() || type->is_custom_type() || escaped->count(variable))){
-                    current_position -= type->size(platform);
+                if (!variable->is_reference() && (position.is_temporary() || position.is_variable())
+                    && (type == STRING || type->is_template_type() || type->is_array() || type->is_custom_type() || escaped->count(variable))) {
+                    current_position -= type->size();
 
-                    Position position(PositionType::STACK, current_position + INT->size(platform));
+                    Position position(PositionType::STACK, current_position + INT->size());
                     variable->setPosition(position);
                 }
             }

@@ -17,9 +17,11 @@ namespace eddic {
  * \brief A type of platform. 
  */
 enum class Platform : unsigned int {
-    INTEL_X86,
-    INTEL_X86_64
+    INTEL_X86 = 0,
+    INTEL_X86_64 = 1
 };
+
+constexpr inline unsigned int number_of_platform = 2;
 
 /*!
  * \brief Return the platform descriptor of the specified platform. 

@@ -28,6 +28,9 @@ void check_for_main(std::shared_ptr<GlobalContext> context);
 void generate_program(ast::SourceFile& program, std::shared_ptr<Configuration> configuration, Platform platform, std::shared_ptr<StringPool> pool);
 
 std::unique_ptr<mtac::Program> EDDIFrontEnd::compile(const std::string& file, Platform platform){
+    // Initialize the types
+    init_global_types(platform);
+
     //The program to build
     ast::SourceFile source;
     source.context = std::make_shared<GlobalContext>(platform);

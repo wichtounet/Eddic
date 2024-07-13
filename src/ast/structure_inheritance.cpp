@@ -27,37 +27,36 @@ void ast::StructureInheritancePass::apply_program(ast::SourceFile& program, bool
         std::size_t structures = 0;
 
         for(auto& block : program){
-            if(auto* ptr = boost::get<ast::struct_definition>(&block)){
-                if(ptr->is_template_declaration()){
+            if(auto* structure = boost::get<ast::struct_definition>(&block)){
+                if(structure->is_template_declaration()){
                     continue;
                 }
 
                 ++structures;
 
-                auto type = ptr->struct_type;
-                auto struct_type = context->get_struct(type);
+                auto signature = context->get_struct(structure->mangled_name);
 
                 //If already resolved
-                if(struct_type->parent_type){
-                    resolved_structures.insert(type->mangle());
+                if(signature->parent_type){
+                    resolved_structures.insert(structure->mangled_name);
                     continue;
                 }
 
                 //If no parent type, already resolved
-                if(!ptr->parent_type){
-                    resolved_structures.insert(type->mangle());
+                if(!structure->parent_type){
+                    resolved_structures.insert(structure->mangled_name);
                     continue;
                 }
 
-                auto parent_type = visit(ast::TypeTransformer(context), *ptr->parent_type);
+                auto parent_type = visit(ast::TypeTransformer(*context), *structure->parent_type);
 
                 if(!context->struct_exists(parent_type)){
-                    context->error_handler.semantical_exception("The parent type is not a valid structure type", *ptr);
+                    context->error_handler.semantical_exception("The parent type is not a valid structure type", *structure);
                 }
 
                 if(resolved_structures.find(parent_type->mangle()) != resolved_structures.end()){
-                    struct_type->parent_type = parent_type;
-                    resolved_structures.insert(type->mangle());
+                    signature->parent_type = parent_type;
+                    resolved_structures.insert(structure->mangled_name);
                 }
             }
         }
@@ -65,9 +64,9 @@ void ast::StructureInheritancePass::apply_program(ast::SourceFile& program, bool
         if(resolved_structures.size() == start_size){
             if(resolved_structures.size() != structures){
                 throw SemanticalException("Invalid inheritance tree");
-            } else {
-                break;
             }
+
+            break;
         }
     }
 }

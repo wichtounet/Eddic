@@ -26,16 +26,16 @@ FunctionContext::FunctionContext(std::shared_ptr<Context> parent, std::shared_pt
     : Context(std::move(parent), std::move(global_context)), platform(platform) {
     //TODO Should not be done here
     if(configuration->option_defined("fomit-frame-pointer")){
-        currentParameter = INT->size(platform);
+        currentParameter = INT->size();
     } else {
-        currentParameter = 2 * INT->size(platform);
+        currentParameter = 2 * INT->size();
     }
 }
 
 int FunctionContext::size() const {
     const int size = -currentPosition;
 
-    if(size == static_cast<int>(INT->size(platform))){
+    if(size == static_cast<int>(INT->size())){
         return 0;
     }
 
@@ -54,7 +54,7 @@ std::shared_ptr<Variable> FunctionContext::newParameter(const std::string& varia
 
     LOG<Info>("Variables") << "New parameter " << variable << " at position " << currentParameter << log::endl;
 
-    currentParameter += type->size(platform);
+    currentParameter += type->size();
 
     return std::make_shared<Variable>(variable, type, position);
 }
@@ -138,7 +138,6 @@ void FunctionContext::allocate_in_param_register(const std::shared_ptr<Variable>
 
 void FunctionContext::removeVariable(std::shared_ptr<Variable> variable){
     auto iter_var = std::find(storage.begin(), storage.end(), variable);
-    auto platform = global()->target_platform();
 
     if(variable->position().isParameter()){
         variables.erase(variable->name());
@@ -147,13 +146,13 @@ void FunctionContext::removeVariable(std::shared_ptr<Variable> variable){
             if(v.second->position().isParameter()){
                 if(v.second->position().offset() > variable->position().offset()){
                     const Position position(PositionType::PARAMETER,
-                                            v.second->position().offset() - variable->type()->size(platform));
+                                            v.second->position().offset() - variable->type()->size());
                     v.second->setPosition(position);
                 }
             }
         }
 
-        currentParameter -= variable->type()->size(platform);
+        currentParameter -= variable->type()->size();
 
         LOG<Info>("Variables") << "Remove parameter " << variable->name() << log::endl;
     } else {

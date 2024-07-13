@@ -80,6 +80,7 @@ struct GlobalContext final : public Context {
          * \return A pointer to the structure with the given name.
          */
         std::shared_ptr<Struct> get_struct(const std::string& struct_) const;
+        std::shared_ptr<Struct> get_struct_safe(const std::string& struct_) const;
 
         /*!
          * Returns the structure of the given type.

@@ -36,7 +36,7 @@ mtac::basic_block_p create_safe_block(mtac::Function& dest_function, mtac::basic
 
     safe_block->statements = std::move(bb->statements);
 
-    for(auto succ : bb->successors){
+    for(const auto& succ : bb->successors){
         mtac::make_edge(safe_block, succ);
     }
 
@@ -65,7 +65,7 @@ mtac::basic_block_p split_if_necessary(mtac::Function& dest_function, mtac::basi
 
         dest_function.insert_after(dest_function.at(bb), split_block);
 
-        for(auto succ : bb->successors){
+        for(const auto& succ : bb->successors){
             mtac::make_edge(split_block, succ);
         }
 
@@ -104,7 +104,7 @@ mtac::BBClones clone(mtac::Function& source_function, mtac::Function& dest_funct
     auto old_exit = source_function.exit_bb();
 
     auto entry = bb->prev;
-    auto exit = bb;
+    const auto& exit = bb;
 
     for(auto& block : source_function){
         //Copy all basic blocks except ENTRY and EXIT
@@ -205,7 +205,7 @@ mtac::VariableClones copy_parameters(mtac::Function& source_function, mtac::Func
                         statement.op = mtac::Operator::DOT_ASSIGN;
                         statement.result = boost::get<std::shared_ptr<Variable>>(variable_clones[src_var]);
                         statement.arg2 = statement.arg1;
-                        statement.arg1 = static_cast<int>(INT->size(dest_definition.context()->global()->target_platform()));
+                        statement.arg1 = static_cast<int>(INT->size());
 
                         string_states[src_var] = false;
                     }
@@ -244,7 +244,7 @@ unsigned int count_constant_parameters(mtac::Function& source_function, mtac::Fu
 
     auto& source_definition = source_function.definition();
 
-    if(source_definition.parameters().size() > 0){
+    if(!source_definition.parameters().empty()){
         mtac::basic_block::iterator pit;
 
         if(bb->statements.front() == call){

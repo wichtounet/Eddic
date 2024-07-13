@@ -36,27 +36,27 @@ ProblemDomain mtac::OffsetConstantPropagationProblem::Boundary(mtac::Function& f
 
     for(auto& variable : function.context->stored_variables()){
         if(variable->type()->is_array() && variable->type()->has_elements()){
-            auto array_size = variable->type()->elements()* variable->type()->data_type()->size(platform) + INT->size(platform);
+            auto array_size = variable->type()->elements()* variable->type()->data_type()->size() + INT->size();
 
             mtac::Offset offset(variable, 0);
             out[offset] = static_cast<int>(variable->type()->elements());
 
             if(variable->type()->data_type() == FLOAT){
-                for(std::size_t i = INT->size(platform); i < array_size; i += INT->size(platform)){
+                for(std::size_t i = INT->size(); i < array_size; i += INT->size()){
                     mtac::Offset offset(variable, i);
                     out[offset] = 0.0;
                 }
             } else {
-                for(std::size_t i = INT->size(platform); i < array_size; i += INT->size(platform)){
+                for(std::size_t i = INT->size(); i < array_size; i += INT->size()){
                     mtac::Offset offset(variable, i);
                     out[offset] = 0;
                 }
             }
         } else if(variable->type()->is_custom_type() || variable->type()->is_template_type()){
-            auto struct_size = variable->type()->size(platform);
+            auto struct_size = variable->type()->size();
 
             //All the values are set to zero
-            for(std::size_t i = 0; i < struct_size; i += INT->size(platform)){
+            for(std::size_t i = 0; i < struct_size; i += INT->size()){
                 mtac::Offset offset(variable, i);
                 out[offset] = 0;
             }
@@ -263,8 +263,8 @@ bool mtac::operator==(const mtac::Domain<OffsetConstantPropagationValues>& lhs, 
         return lhs.top() == rhs.top();
     }
 
-    auto& lhs_values = lhs.values();
-    auto& rhs_values = rhs.values();
+    const auto & lhs_values = lhs.values();
+    const auto & rhs_values = rhs.values();
 
     if(lhs_values.size() != rhs_values.size()){
         return false;

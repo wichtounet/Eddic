@@ -17,17 +17,29 @@ std::shared_ptr<const eddic::Type> ast::TypeTransformer::operator()(const ast::S
 }
 
 std::shared_ptr<const eddic::Type> ast::TypeTransformer::operator()(const ast::ArrayType& type) const {
+    if (standard_only)  {
+        return nullptr;
+    }
+
     return new_array_type(visit(*this, type.type.get()));
 }
 
 std::shared_ptr<const eddic::Type> ast::TypeTransformer::operator()(const ast::PointerType& type) const {
+    if (standard_only)  {
+        return nullptr;
+    }
+
     return new_pointer_type(visit(*this, type.type.get()));
 }
 
 std::shared_ptr<const eddic::Type> ast::TypeTransformer::operator()(const ast::TemplateType& type) const {
+    if (standard_only)  {
+        return nullptr;
+    }
+
     std::vector<std::shared_ptr<const eddic::Type>> template_types;
 
-    for(auto& tmp_type : type.template_types){
+    for(const auto& tmp_type : type.template_types){
        template_types.push_back(visit(*this, tmp_type));
     }
 

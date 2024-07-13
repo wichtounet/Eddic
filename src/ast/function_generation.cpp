@@ -37,11 +37,11 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
 
             auto& c = *ptr;
 
-            if(c.parameters.size() == 0){
+            if(c.parameters.empty()){
                 default_constructor = true;
             } else if(c.parameters.size() == 1){
                 auto& parameter = c.parameters.front();
-                auto parameter_type = visit(ast::TypeTransformer(context), parameter.parameterType);
+                auto parameter_type = visit(ast::TypeTransformer(*context), parameter.parameterType);
 
                 if(parameter_type == new_pointer_type(struct_.struct_type)){
                     copy_constructor = true;

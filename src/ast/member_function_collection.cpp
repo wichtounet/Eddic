@@ -12,6 +12,7 @@
 #include "Type.hpp"
 #include "GlobalContext.hpp"
 #include "FunctionContext.hpp"
+#include "logging.hpp"
 #include "Variable.hpp"
 
 #include "ast/member_function_collection.hpp"

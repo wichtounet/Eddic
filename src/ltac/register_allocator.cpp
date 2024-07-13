@@ -751,7 +751,7 @@ void spill_code(ltac::interference_graph<Pseudo>& graph, mtac::Function& functio
 
         //Allocate stack space for the pseudo reg
         auto position = function.context->stack_position();
-        position -= INT->size(function.context->global()->target_platform());
+        position -= INT->size();
         function.context->set_stack_position(position);
 
         for(auto& bb : function){

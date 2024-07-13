@@ -29,7 +29,7 @@ using namespace eddic;
 
 namespace {
 
-typedef std::unordered_map<std::shared_ptr<Variable>, x3::file_position_tagged> Positions;
+using Positions = std::unordered_map<std::shared_ptr<Variable>, x3::file_position_tagged>;
 
 struct Collector : public boost::static_visitor<> {
     public:
@@ -211,7 +211,7 @@ struct Inspector : public boost::static_visitor<> {
         void operator()(ast::Cast& cast){
             if(configuration->option_defined("warning-cast")){
                 auto src_type = visit(ast::GetTypeVisitor(), cast.value);
-                auto dest_type = visit(ast::TypeTransformer(context), cast.type);
+                auto dest_type = visit(ast::TypeTransformer(*context), cast.type);
 
                 if(src_type == dest_type){
                     warn(context->error_handler.to_string(cast), "useless cast");

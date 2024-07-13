@@ -20,17 +20,14 @@
 
 //The passes
 #include "ast/TransformerEngine.hpp"
-#include "ast/TemplateCollectionPass.hpp"
 #include "ast/ContextAnnotator.hpp"
 #include "ast/structure_check.hpp"
-#include "ast/structure_collection.hpp"
-#include "ast/structure_inheritance.hpp"
-#include "ast/structure_member_collection.hpp"
 #include "ast/DefaultValues.hpp"
 #include "ast/member_function_collection.hpp"
 #include "ast/function_collection.hpp"
 #include "ast/function_generation.hpp"
 #include "ast/function_check.hpp"
+#include "ast/type_collection.hpp"
 #include "ast/VariablesAnnotator.hpp"
 #include "ast/StringChecker.hpp"
 #include "ast/TypeChecker.hpp"
@@ -40,6 +37,7 @@ using namespace eddic;
 
 namespace {
 
+// This applies the pass to a structure
 void apply_pass(ast::Pass & pass, ast::struct_definition& struct_){
     pass.apply_struct(struct_, false);
 
@@ -56,6 +54,7 @@ void apply_pass(ast::Pass & pass, ast::struct_definition& struct_){
     }
 }
 
+// This applies the pass to the entire program
 void apply_pass(ast::Pass & pass, ast::SourceFile& program, Configuration & configuration){
     LOG<Info>("Passes") << "Run (standard) pass \"" << pass.name() << "\"" << log::endl;
 
@@ -123,17 +122,10 @@ void ast::PassManager::init_passes(){
     //Context annotation pass
     passes.push_back(make_pass<ast::ContextAnnotationPass>("context annotation", template_engine, platform, configuration, pool));
 
-    //Structures collection pass
-    passes.push_back(make_pass<ast::StructureCollectionPass>("structures collection", template_engine, platform, configuration, pool));
+    //Type collection pass
+    passes.push_back(make_pass<ast::TypeCollectionPass>("type collection", template_engine, platform, configuration, pool));
 
-    //Structures inheritance pass
-    passes.push_back(make_pass<ast::StructureInheritancePass>("structures inheritance", template_engine, platform, configuration, pool));
-
-    //Template Collection pass
-    passes.push_back(make_pass<ast::TemplateCollectionPass>("templates collection", template_engine, platform, configuration, pool));
-
-    //Structures member collection pass
-    passes.push_back(make_pass<ast::StructureMemberCollectionPass>("structures member collection", template_engine, platform, configuration, pool));
+    // TODO Need a validation pair for the resolving
 
     //Function Generation Pass
     passes.push_back(make_pass<ast::FunctionGenerationPass>("function generation", template_engine, platform, configuration, pool));

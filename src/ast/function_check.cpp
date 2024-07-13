@@ -43,7 +43,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
             template_engine->check_type(foreach.variableType, foreach);
 
             if(check_variable(foreach.context, foreach.variableName, foreach)){
-                auto type = visit(ast::TypeTransformer(context), foreach.variableType);
+                auto type = visit(ast::TypeTransformer(*context), foreach.variableType);
 
                 auto var = foreach.context->addVariable(foreach.variableName, type);
                 var->set_source_position(foreach);
@@ -60,7 +60,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
                     this->context->error_handler.semantical_exception("The foreach array " + foreach.arrayName  + " has not been declared", foreach);
                 }
 
-                auto type = visit(ast::TypeTransformer(context), foreach.variableType);
+                auto type = visit(ast::TypeTransformer(*context), foreach.variableType);
 
                 foreach.var = foreach.context->addVariable(foreach.variableName, type);
                 foreach.var->set_source_position(foreach);
@@ -290,7 +290,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
             }
 
             if(check_variable(declaration.context, declaration.variableName, declaration)){
-                auto type = visit(ast::TypeTransformer(context), declaration.variableType);
+                auto type = visit(ast::TypeTransformer(*context), declaration.variableType);
 
                 //If it's a standard type
                 if(type->is_standard_type()){
@@ -352,7 +352,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
             check_each(declaration.values);
 
             if(check_variable(declaration.context, declaration.variableName, declaration)){
-                auto type = visit(ast::TypeTransformer(context), declaration.variableType);
+                auto type = visit(ast::TypeTransformer(*context), declaration.variableType);
 
                 if(!type->is_custom_type() && !type->is_template_type()){
                     this->context->error_handler.semantical_exception("Only custom types take parameters when declared", declaration);
@@ -380,7 +380,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
             check_value(declaration.size);
 
             if(check_variable(declaration.context, declaration.arrayName, declaration)){
-                auto element_type = visit(ast::TypeTransformer(context), declaration.arrayType);
+                auto element_type = visit(ast::TypeTransformer(*context), declaration.arrayType);
 
                 if(element_type->is_array()){
                     this->context->error_handler.semantical_exception("Arrays of arrays are not supported", declaration);
@@ -564,7 +564,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
                     this->context->error_handler.semantical_exception("The value must be constant", declaration);
                 }
 
-                auto type = visit(ast::TypeTransformer(context), declaration.variableType);
+                auto type = visit(ast::TypeTransformer(*context), declaration.variableType);
 
                 auto var = declaration.context->addVariable(declaration.variableName, type, *declaration.value);
                 var->set_source_position(declaration);
@@ -579,12 +579,12 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
                     return true;
                 }
 
-                auto t = visit_non_variant(ast::TypeTransformer(context), *ptr);
+                auto t = visit_non_variant(ast::TypeTransformer(*context), *ptr);
                 return context->struct_exists(t->mangle());
             } else if(auto* ptr = boost::smart_get<ast::PointerType>(&type)){
                 return is_valid(ptr->type);
             } else if(auto* ptr = boost::smart_get<ast::TemplateType>(&type)){
-                auto t = visit_non_variant(ast::TypeTransformer(context), *ptr);
+                auto t = visit_non_variant(ast::TypeTransformer(*context), *ptr);
                 return context->struct_exists(t->mangle());
             }
 
@@ -602,7 +602,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
                         this->context->error_handler.semantical_exception("Invalid parameter type " + ast::to_string(parameter.parameterType), declaration);
                     }
 
-                    auto type = visit(ast::TypeTransformer(context), parameter.parameterType);
+                    auto type = visit(ast::TypeTransformer(*context), parameter.parameterType);
                     auto var = declaration.context->addParameter(parameter.parameterName, type);
                     var->set_source_position(declaration);
                 }
@@ -638,7 +638,7 @@ void ast::FunctionCheckPass::apply_function(ast::TemplateFunctionDeclaration& de
         visitor.context = context;
         visitor.visit_function(declaration);
 
-        auto return_type = visit(ast::TypeTransformer(context), declaration.returnType);
+        auto return_type = visit(ast::TypeTransformer(*context), declaration.returnType);
         if(return_type->is_custom_type() || return_type->is_template_type()){
             declaration.context->addParameter("__ret", new_pointer_type(return_type));
         }

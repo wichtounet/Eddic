@@ -64,7 +64,7 @@ class CheckerVisitor : public boost::static_visitor<> {
         }
 
         void operator()(ast::GlobalVariableDeclaration& declaration){
-            auto type = visit(ast::TypeTransformer(context), declaration.variableType);
+            auto type = visit(ast::TypeTransformer(*context), declaration.variableType);
 
             auto valueType = visit(ast::GetTypeVisitor(), *declaration.value);
             if (valueType != type) {
@@ -364,7 +364,7 @@ class CheckerVisitor : public boost::static_visitor<> {
         void operator()(ast::New& new_){
             visit_each(*this, new_.values);
 
-            auto type = visit(ast::TypeTransformer(context), new_.type);
+            auto type = visit(ast::TypeTransformer(*context), new_.type);
 
             if(!(type->is_standard_type() || type->is_custom_type() || type->is_template_type())){
                 context->error_handler.semantical_exception("Only standard types and struct types can be dynamically allocated", new_);
@@ -372,7 +372,7 @@ class CheckerVisitor : public boost::static_visitor<> {
         }
 
         void operator()(ast::NewArray& new_){
-            auto type = visit(ast::TypeTransformer(context), new_.type);
+            auto type = visit(ast::TypeTransformer(*context), new_.type);
 
             if(type->is_array()){
                 context->error_handler.semantical_exception("Multidimensional arrays are not supported", new_);

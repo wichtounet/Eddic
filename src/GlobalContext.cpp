@@ -95,14 +95,19 @@ bool GlobalContext::struct_exists(std::shared_ptr<const Type> type) const {
     return struct_exists(struct_name);
 }
 
+std::shared_ptr<Struct> GlobalContext::get_struct_safe(const std::string& struct_name) const {
+    cpp_assert(struct_exists(struct_name), ("The structure \"" + struct_name + "\" does not exists").c_str());
+    return m_structs.at(struct_name);
+}
+
 std::shared_ptr<Struct> GlobalContext::get_struct(const std::string& struct_name) const {
     auto it = m_structs.find(struct_name);
     
     if(it == m_structs.end()){
         return nullptr;
-    } else {
-        return it->second;
     }
+
+    return it->second;
 }
         
 std::shared_ptr<Struct> GlobalContext::get_struct(std::shared_ptr<const Type> type) const {
@@ -123,12 +128,12 @@ std::shared_ptr<Struct> GlobalContext::get_struct(std::shared_ptr<const Type> ty
 int GlobalContext::member_offset(std::shared_ptr<const Struct> struct_, const std::string& member) const {
     int offset = 0;
 
-    for(auto& m : struct_->members){
+    for(const auto& m : struct_->members){
         if(m.name == member){
             return offset;
         }
 
-        offset += m.type->size(platform);
+        offset += m.type->size();
     }
 
     cpp_unreachable("The member is not part of the struct");
@@ -137,12 +142,12 @@ int GlobalContext::member_offset(std::shared_ptr<const Struct> struct_, const st
 std::shared_ptr<const Type> GlobalContext::member_type(std::shared_ptr<const Struct> struct_, int offset) const {
     int current_offset = 0;
 
-    for(auto& m : struct_->members){
+    for(const auto& m : struct_->members){
         if(offset <= current_offset){
             return m.type;
         }
         
-        current_offset += m.type->size(platform);
+        current_offset += m.type->size();
     }
 
     return struct_->members.back().type;
@@ -151,9 +156,11 @@ std::shared_ptr<const Type> GlobalContext::member_type(std::shared_ptr<const Str
 int GlobalContext::self_size_of_struct(std::shared_ptr<const Struct> struct_) const {
     int struct_size = 0;
 
-    for(auto& m : struct_->members){
-        struct_size += m.type->size(platform);
+    for(const auto& m : struct_->members){
+        struct_size += m.type->size();
     }
+
+    cpp_assert(struct_->members.size(), "self_size_of_struct");
     
     return struct_size;
 }

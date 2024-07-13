@@ -17,9 +17,9 @@ namespace {
 struct Collector : public boost::static_visitor<> {
     ast::TemplateEngine& template_engine;
 
-    std::string parent_struct = "";
+    std::string parent_struct;
 
-    Collector(ast::TemplateEngine& template_engine) : template_engine(template_engine) {}
+    explicit Collector(ast::TemplateEngine& template_engine) : template_engine(template_engine) {}
 
     AUTO_RECURSE_PROGRAM()
 
@@ -51,7 +51,7 @@ void ast::TemplateCollectionPass::apply_program(ast::SourceFile& program, bool i
 void ast::TemplateCollectionPass::apply_struct(ast::struct_definition& struct_, bool indicator){
     if(!indicator){
         Collector collector(*template_engine);
-        collector.parent_struct = struct_.struct_type->mangle();
+        collector.parent_struct = struct_.mangled_name;
         visit_each(collector, struct_.blocks);
     }
 }

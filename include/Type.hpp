@@ -16,6 +16,7 @@
 
 #include "BaseType.hpp"
 #include "Platform.hpp"
+#include "cpp_utils/assert.hpp"
 
 namespace eddic {
 
@@ -116,7 +117,13 @@ class Type : public std::enable_shared_from_this<Type> {
          * Return the size of the type in memory in octets.
          * \return the size of the type, in octets.
          */
-        virtual unsigned int size(Platform platform) const;
+        unsigned int size() const {
+            if (!size_) {
+            std::cout << "INvalid size for " << mangle() << std::endl;
+            }
+            cpp_assert(size_ > 0, "Invalid size");
+            return size_;
+        }
 
         /*!
          * Return the mangled name of the type.
@@ -131,13 +138,15 @@ class Type : public std::enable_shared_from_this<Type> {
         /*!
          * Construct a new Type.
          */
-        Type();
+        explicit Type(unsigned int size) : size_(size) {}
 
         /*!
          * Return the base type of a standard type
          * \return the base type.
          */
         virtual BaseType base() const;
+
+        unsigned size_ = 0;
 };
 
 /*!
@@ -152,7 +161,7 @@ class StandardType : public Type {
         BaseType base() const override;
 
     public:
-        StandardType(BaseType type, bool const_);
+        StandardType(Platform platform, BaseType type, bool const_);
 
         /*!
          * Deleted copy constructor
@@ -166,10 +175,6 @@ class StandardType : public Type {
 
         bool is_standard_type() const override;
         bool is_const() const override;
-
-        unsigned int size(Platform platform) const override;
-
-        mutable Platform platform;
 };
 
 /*!
@@ -178,11 +183,10 @@ class StandardType : public Type {
  */
 class CustomType : public Type {
     private:
-        std::shared_ptr<GlobalContext> context;
         std::string m_type;
 
     public:
-        CustomType(std::shared_ptr<GlobalContext> context, const std::string& type);
+        CustomType(const GlobalContext & context, const std::string& type);
 
         /*!
          * Deleted copy constructor
@@ -197,8 +201,6 @@ class CustomType : public Type {
         std::string type() const override;
 
         bool is_custom_type() const override;
-
-        unsigned int size(Platform platform) const override;
 };
 
 /*!
@@ -211,8 +213,8 @@ struct ArrayType : public Type {
         boost::optional<unsigned int> m_elements;
 
     public:
-        ArrayType(std::shared_ptr<const Type> sub_type);
-        ArrayType(std::shared_ptr<const Type> sub_type, int size);
+        ArrayType(const std::shared_ptr<const Type> & sub_type);
+        ArrayType(const std::shared_ptr<const Type> & sub_type, int size);
 
         /*!
          * Deleted copy constructor
@@ -230,8 +232,6 @@ struct ArrayType : public Type {
         std::shared_ptr<const Type> data_type() const override;
 
         bool is_array() const override;
-
-        unsigned int size(Platform platform) const override;
 };
 
 /*!
@@ -243,7 +243,7 @@ struct PointerType : public Type {
         std::shared_ptr<const Type> sub_type;
 
     public:
-        PointerType(std::shared_ptr<const Type> sub_type);
+        PointerType(const std::shared_ptr<const Type> & sub_type);
 
         /*!
          * Deleted copy constructor
@@ -258,8 +258,6 @@ struct PointerType : public Type {
         std::shared_ptr<const Type> data_type() const override;
 
         bool is_pointer() const override;
-
-        unsigned int size(Platform platform) const override;
 };
 
 /*!
@@ -268,12 +266,11 @@ struct PointerType : public Type {
  */
 struct TemplateType : public Type {
     private:
-        std::shared_ptr<GlobalContext> context;
         std::string main_type;
         std::vector<std::shared_ptr<const Type>> sub_types;
 
     public:
-        TemplateType(std::shared_ptr<GlobalContext> context, std::string main_type, std::vector<std::shared_ptr<const Type>> sub_types);
+        TemplateType(const GlobalContext & context, const std::string & main_type, const std::vector<std::shared_ptr<const Type>> & sub_types);
 
         /*!
          * Deleted copy constructor
@@ -289,8 +286,6 @@ struct TemplateType : public Type {
         std::vector<std::shared_ptr<const Type>> template_types() const override;
 
         bool is_template_type() const override;
-
-        unsigned int size(Platform platform) const override;
 };
 
 /* Relational operators  */
@@ -305,13 +300,15 @@ extern std::shared_ptr<const Type> FLOAT;
 extern std::shared_ptr<const Type> STRING;
 extern std::shared_ptr<const Type> VOID;
 
+void init_global_types(Platform platform);
+
 /*!
  * \brief Parse the given type into an EDDI std::shared_ptr<Type>.
  *
  * \param context The current global context
  * \param type The type to parse.
  */
-std::shared_ptr<const Type> new_type(std::shared_ptr<GlobalContext> context, const std::string& type, bool const_ = false);
+std::shared_ptr<const Type> new_type(const GlobalContext & context, const std::string& type, bool const_ = false);
 
 /*!
  * Create a new array type of the given type.
@@ -335,7 +332,7 @@ std::shared_ptr<const Type> new_array_type(std::shared_ptr<const Type> data_type
  */
 std::shared_ptr<const Type> new_pointer_type(std::shared_ptr<const Type> data_type);
 
-std::shared_ptr<const Type> new_template_type(std::shared_ptr<GlobalContext> context, std::string data_type, std::vector<std::shared_ptr<const Type>> template_types);
+std::shared_ptr<const Type> new_template_type(const GlobalContext & context, std::string data_type, std::vector<std::shared_ptr<const Type>> template_types);
 
 /*!
  * Indicates if the given type is a standard type or not.

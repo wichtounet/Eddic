@@ -53,19 +53,19 @@ void change_address(Arg& arg, int bp_offset){
     }
 }
 
-}
+} // namespace
 
 void ltac::fix_stack_offsets(mtac::Program& program, Platform platform){
     timing_timer timer(program.context->timing(), "stack_offsets");
 
-    for(auto& function : program.functions){
+    for (auto & function : program.functions) {
         std::unordered_map<std::string, int> offset_labels;
         int bp_offset = 0;
-        
-        for(auto& bb : function){
-            for(auto& instruction : bb->l_statements){
+
+        for (auto & bb : function) {
+            for (auto & instruction : bb->l_statements) {
                 if(instruction.is_label()){
-                    if(offset_labels.count(instruction.label)){
+                    if(offset_labels.contains(instruction.label)){
                         bp_offset = offset_labels[instruction.label];
                         offset_labels.erase(instruction.label);
                     }
@@ -90,14 +90,14 @@ void ltac::fix_stack_offsets(mtac::Program& program, Platform platform){
                     }
 
                     if(instruction.op == ltac::Operator::PUSH){
-                        bp_offset += INT->size(platform);
+                        bp_offset += INT->size();
                     }
 
                     if(instruction.op == ltac::Operator::POP){
-                        bp_offset -= INT->size(platform);
+                        bp_offset -= INT->size();
                     }
                 }
-            } 
+            }
         }
     }
 }

@@ -45,6 +45,8 @@ void ast::StructureCollectionPass::apply_struct(ast::struct_definition& struct_,
         mangled_name = mangle_custom_type(struct_.name);
     }
 
+    struct_.mangled_name = mangled_name;
+
     // 1. Register the structure
 
     if (context->struct_exists(mangled_name)) {

@@ -36,11 +36,11 @@ std::shared_ptr<const Type> ast::GetTypeVisitor::operator()(const ast::Null& /*n
 }
 
 std::shared_ptr<const Type> ast::GetTypeVisitor::operator()(const ast::New& value) const {
-    return new_pointer_type(visit(ast::TypeTransformer(value.context->global()), value.type));
+    return new_pointer_type(visit(ast::TypeTransformer(*value.context->global()), value.type));
 }
 
 std::shared_ptr<const Type> ast::GetTypeVisitor::operator()(const ast::NewArray& value) const {
-    return new_array_type(visit(ast::TypeTransformer(value.context->global()), value.type));
+    return new_array_type(visit(ast::TypeTransformer(*value.context->global()), value.type));
 }
 
 std::shared_ptr<const Type> ast::GetTypeVisitor::operator()(const ast::Ternary& ternary) const {
@@ -51,7 +51,7 @@ std::shared_ptr<const Type> ast::GetTypeVisitor::operator()(const ast::Cast& cas
     if(cast.resolved_type){
         return cast.resolved_type;
     } else {
-        return visit(ast::TypeTransformer(cast.context->global()), cast.type);
+        return visit(ast::TypeTransformer(*cast.context->global()), cast.type);
     }
 }
 
