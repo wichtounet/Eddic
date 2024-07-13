@@ -76,91 +76,74 @@ struct IsResolved : public boost::static_visitor<bool> {
     }
 };
 
-// TODO: This could be made more efficient when processing new structures (not having to do the full program)
-// We could imagine a apply_program_post to only resolve after all structures have been processed
-
-void ast::TypeCollectionPass::apply_program(ast::SourceFile& program, bool indicator){
-    auto context = program.context;
-
+void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bool){
     // 0. Sanity check: validate no double members
-    for (auto & block : program) {
-        if (auto * structure = boost::get<ast::struct_definition>(&block)) {
-            if (structure->is_template_declaration()) {
-                continue;
+    if (structure.is_template_declaration()) {
+        return;
+    }
+
+    // If the structure is already annotated, we skip over (this must be a template instantiation)
+    if (!structure.mangled_name.empty()) {
+        return;
+    }
+
+    std::vector<std::string> names;
+
+    for (auto & block : structure.blocks) {
+        if (auto * ptr = boost::get<ast::MemberDeclaration>(&block)) {
+            auto & member = *ptr;
+
+            if (std::find(names.begin(), names.end(), member.name) != names.end()) {
+                context->error_handler.semantical_exception("The member " + member.name + " has already been defined", member);
             }
 
-            // If the structure is already annotated, we skip over (this must be a template instantiation)
-            if (!structure->mangled_name.empty()) {
-                continue;
+            names.push_back(member.name);
+        } else if (auto * ptr = boost::get<ast::ArrayDeclaration>(&block)) {
+            auto & member = *ptr;
+            auto & name   = member.arrayName;
+
+            if (std::find(names.begin(), names.end(), name) != names.end()) {
+                context->error_handler.semantical_exception("The member " + name + " has already been defined", member);
             }
 
-            std::vector<std::string> names;
-
-            for (auto & block : structure->blocks) {
-                if (auto * ptr = boost::get<ast::MemberDeclaration>(&block)) {
-                    auto & member = *ptr;
-
-                    if (std::find(names.begin(), names.end(), member.name) != names.end()) {
-                        context->error_handler.semantical_exception("The member " + member.name + " has already been defined", member);
-                    }
-
-                    names.push_back(member.name);
-                } else if (auto * ptr = boost::get<ast::ArrayDeclaration>(&block)) {
-                    auto & member = *ptr;
-                    auto & name   = member.arrayName;
-
-                    if (std::find(names.begin(), names.end(), name) != names.end()) {
-                        context->error_handler.semantical_exception("The member " + name + " has already been defined", member);
-                    }
-
-                    names.push_back(name);
-                }
-            }
+            names.push_back(name);
         }
     }
 
+    // Prepare the mangled name
+
+    std::vector<std::shared_ptr<const eddic::Type>> template_types;
+    std::string                                     mangled_name;
+    if (structure.is_template_instantation()) {
+        ast::TypeTransformer transformer(*context);
+
+        for (auto & type : structure.inst_template_types) {
+            template_types.push_back(visit(transformer, type));
+        }
+
+        mangled_name = mangle_template_type(structure.name, template_types);
+    } else {
+        mangled_name = mangle_custom_type(structure.name);
+    }
+
+    structure.mangled_name = mangled_name;
+
+    // Register the structure signature
+
+    if (context->struct_exists(mangled_name)) {
+        context->error_handler.semantical_exception("The structure " + mangled_name + " has already been defined", structure);
+    }
+
+    context->add_struct(std::make_shared<eddic::Struct>(mangled_name));
+
+    // Collect the function templates
+    TemplateCollector template_collector(*template_engine);
+    template_collector.parent_struct = structure.mangled_name;
+    visit_each(template_collector, structure.blocks);
+}
+
+void ast::TypeCollectionPass::apply_program_post(ast::SourceFile& program, bool indicator){
     // TODO Implement more sanity checks for members
-
-    // 1. Register all the structures with their mangled names
-
-    for (auto & block : program) {
-        if (auto * structure = boost::get<ast::struct_definition>(&block)) {
-            if (structure->is_template_declaration()) {
-                continue;
-            }
-
-            // If the structure is already annotated, we skip over (this must be a template instantiation)
-            if (!structure->mangled_name.empty()) {
-                continue;
-            }
-
-            // Prepare the mangled name
-
-            std::vector<std::shared_ptr<const eddic::Type>> template_types;
-            std::string                                     mangled_name;
-            if (structure->is_template_instantation()) {
-                ast::TypeTransformer transformer(*context);
-
-                for (auto & type : structure->inst_template_types) {
-                    template_types.push_back(visit(transformer, type));
-                }
-
-                mangled_name = mangle_template_type(structure->name, template_types);
-            } else {
-                mangled_name = mangle_custom_type(structure->name);
-            }
-
-            structure->mangled_name = mangled_name;
-
-            // Register the structure signature
-
-            if (context->struct_exists(mangled_name)) {
-                context->error_handler.semantical_exception("The structure " + mangled_name + " has already been defined", *structure);
-            }
-
-            context->add_struct(std::make_shared<eddic::Struct>(mangled_name));
-        }
-    }
 
     // 2. We can collect all the templates
 
@@ -169,22 +152,8 @@ void ast::TypeCollectionPass::apply_program(ast::SourceFile& program, bool indic
         template_collector(program);
     }
 
-    // TODO This should not be done multiple timesj
-    for (auto & block : program) {
-        if (auto * structure = boost::get<ast::struct_definition>(&block)) {
-            if (structure->is_template_declaration()) {
-                continue;
-            }
-
-            auto & struct_ = *structure;
-
-            TemplateCollector template_collector(*template_engine);
-            template_collector.parent_struct = struct_.mangled_name;
-            visit_each(template_collector, struct_.blocks);
-        }
-    }
-
     // 3. We try to fully resolve all types
+    // TODO, we should only work on the pending list
 
     while (true) {
         bool progress = false;
@@ -303,6 +272,4 @@ void ast::TypeCollectionPass::apply_program(ast::SourceFile& program, bool indic
             break;
         }
     }
-
-    // After this pass (in another pass), we must validate that the list of pending structures is empty
 }

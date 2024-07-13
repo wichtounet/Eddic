@@ -16,8 +16,9 @@
 
 namespace eddic::ast {
 
-struct TypeCollectionPass : Pass {
-    void apply_program(ast::SourceFile& program, bool indicator) override;
+struct TypeCollectionPass : ContextAwarePass {
+    void apply_program_post(ast::SourceFile& program, bool indicator) override;
+    void apply_struct(ast::struct_definition & struct_, bool indicator) override;
 
 private:
     std::unordered_map<std::string, std::shared_ptr<const eddic::Type>> fully_resolved;
