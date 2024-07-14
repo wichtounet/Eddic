@@ -198,7 +198,21 @@ void ast::TypeCollectionPass::apply_program_post(ast::SourceFile& program, bool 
                     continue;
                 }
 
-                // TODO Check if template types can be resolved
+                bool resolved_templates = true;
+                if (structure->is_template_instantation()) {
+                    for (auto & type : structure->inst_template_types) {
+                        if (!visit(is_resolved, type)) {
+                            resolved_templates = false;
+                            break;
+                        }
+                    }
+
+                }
+
+                if (!resolved_templates) {
+                    pending.insert(structure->mangled_name);
+                    continue;
+                }
 
                 // At this point, the structure is entirely resolvable
 
@@ -233,7 +247,15 @@ void ast::TypeCollectionPass::apply_program_post(ast::SourceFile& program, bool 
                 // Create the type itself
 
                 if (structure->is_template_instantation()){
-                    // TODO structure->struct_type = new_template_type(*context, structure->name, template_types);
+                    std::vector<std::shared_ptr<const eddic::Type>> template_types;
+
+                    ast::TypeTransformer transformer(*context);
+
+                    for(auto& type : structure->inst_template_types){
+                        template_types.push_back(visit(transformer, type));
+                    }
+
+                    structure->struct_type = new_template_type(*context, structure->name, template_types);
                 } else {
                     structure->struct_type = new_type(*context, structure->name, false);
                 }
