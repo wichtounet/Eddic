@@ -33,6 +33,7 @@
 #include "ast/StringChecker.hpp"
 #include "ast/TypeChecker.hpp"
 #include "ast/WarningsEngine.hpp"
+#include "ast/TemplateFunctionDeclaration.hpp"
 
 using namespace eddic;
 
@@ -281,35 +282,30 @@ void ast::PassManager::run_passes(){
                 class_instantiated.clear();
                 functions_instantiated.clear();
 
-                //Add the instantiated class and function templates to the actual program
+                // Add structures to the program and apply passes
 
-                for(auto& struct_ : new_classes){
-                    program_.emplace_back(struct_);
+                for (auto & struct_ : new_classes) {
+                    auto & new_structure = program_.emplace_back(struct_);
+                    apply_struct_instantiated(*pass, boost::get<ast::struct_definition>(new_structure));
                 }
 
-                for(auto& [context, function] : new_functions){
-                    if(context.empty()){
-                        program_.emplace_back(function);
+                // Add functions to the program and apply passes
+
+                for (auto & [context, function] : new_functions) {
+                    if (context.empty()) {
+                        auto & new_function = program_.emplace_back(function);
+                        apply_function_instantiated(*pass, boost::get<ast::TemplateFunctionDeclaration>(new_function), context);
                     } else {
-                        for(auto& block : program_){
-                            if(auto* struct_type = boost::get<ast::struct_definition>(&block)){
-                                if(!struct_type->is_template_declaration() && struct_type->struct_type->mangle() == context){
-                                    struct_type->blocks.emplace_back(function);
+                        for (auto & block : program_) {
+                            if (auto * struct_type = boost::get<ast::struct_definition>(&block)) {
+                                if (!struct_type->is_template_declaration() && struct_type->struct_type->mangle() == context) {
+                                    auto & new_function = struct_type->blocks.emplace_back(function);
+                                    apply_function_instantiated(*pass, boost::get<ast::TemplateFunctionDeclaration>(new_function), context);
                                     break;
                                 }
                             }
                         }
                     }
-                }
-
-                // Apply the current pass to instantiated structures
-                for(auto& struct_ : new_classes){
-                    apply_struct_instantiated(*pass, struct_);
-                }
-
-                // Apply the current pass to instantiated functions
-                for(auto& [context, function] : new_functions){
-                    apply_function_instantiated(*pass, function, context);
                 }
             }
 
