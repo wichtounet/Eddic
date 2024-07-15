@@ -28,6 +28,7 @@
 #include "ast/function_generation.hpp"
 #include "ast/function_check.hpp"
 #include "ast/type_collection.hpp"
+#include "ast/type_finalization.hpp"
 #include "ast/VariablesAnnotator.hpp"
 #include "ast/StringChecker.hpp"
 #include "ast/TypeChecker.hpp"
@@ -127,7 +128,8 @@ void ast::PassManager::init_passes(){
     //Type collection pass
     passes.push_back(make_pass<ast::TypeCollectionPass>("type collection", template_engine, platform, configuration, pool));
 
-    // TODO Need a validation pair for the resolving
+    //Type finalization pass
+    passes.push_back(make_pass<ast::TypeFinalizationPass>("type finalization", template_engine, platform, configuration, pool));
 
     //Function Generation Pass
     passes.push_back(make_pass<ast::FunctionGenerationPass>("function generation", template_engine, platform, configuration, pool));
