@@ -104,8 +104,6 @@ void ast::resolveDependencies(ast::SourceFile& program, parser_x3::SpiritParser&
     DependencyVisitor visitor(parser, program);
     visitor(program);
 
-    program.reserve(program.size() + visitor.blocks.size());
-
     for(auto& block : visitor.blocks){
        program.emplace_back(std::move(block));
     }

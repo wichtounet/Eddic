@@ -8,7 +8,7 @@
 #ifndef AST_SOURCE_FILE_H
 #define AST_SOURCE_FILE_H
 
-#include <vector>
+#include <deque>
 
 //Must be done before any other boost include
 #include "variant.hpp"
@@ -47,7 +47,7 @@ typedef x3::variant<
  * \class ASTSourceFile
  * \brief The AST root node for a program.
  */
-struct SourceFile : x3::file_position_tagged, std::vector<SourceFileBlock> {
+struct SourceFile : x3::file_position_tagged, std::deque<SourceFileBlock> {
     std::shared_ptr<GlobalContext> context;
 };
 

@@ -10,6 +10,7 @@
 
 #include <list>
 #include <vector>
+#include <deque>
 #include <type_traits>
 
 #include <boost/optional/optional.hpp>
@@ -139,7 +140,17 @@ inline void visit_each(Visitor& visitor, std::vector<Visitable>& elements){
 }
 
 /*!
- * Apply the visitor to each variant object inside the vector. 
+ * Apply the visitor to each variant object inside the deque. 
+ * \param visitor The visitor to apply. 
+ * \param elements The elements to visit. 
+ */
+template<typename Visitor, typename Visitable>
+inline void visit_each(Visitor& visitor, std::deque<Visitable>& elements){
+    for_each(elements.begin(), elements.end(), [&](Visitable& visitable){ visit(visitor, visitable); });
+}
+
+/*!
+ * Apply the visitor to each variant object inside the list. 
  * \param visitor The visitor to apply. 
  * \param elements The elements to visit. 
  */
@@ -159,7 +170,17 @@ inline void visit_each_non_variant(Visitor& visitor, std::vector<Visitable>& ele
 }
 
 /*!
- * Apply the visitor to each variant object inside the vector. The elements can be non-variant type. 
+ * Apply the visitor to each variant object inside the deque. The elements can be non-variant type. 
+ * \param visitor The visitor to apply. 
+ * \param elements The elements to visit. 
+ */
+template<typename Visitor, typename Visitable>
+inline void visit_each_non_variant(Visitor& visitor, std::deque<Visitable>& elements){
+    for_each(elements.begin(), elements.end(), [&](Visitable& visitable){ visit_non_variant(visitor, visitable); });
+}
+
+/*!
+ * Apply the visitor to each variant object inside the list. The elements can be non-variant type. 
  * \param visitor The visitor to apply. 
  * \param elements The elements to visit. 
  */
