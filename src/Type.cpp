@@ -22,6 +22,7 @@ std::shared_ptr<const Type> eddic::CHAR;
 std::shared_ptr<const Type> eddic::FLOAT;
 std::shared_ptr<const Type> eddic::STRING;
 std::shared_ptr<const Type> eddic::VOID;
+std::shared_ptr<const Type> eddic::POINTER;
 
 /* Const versions */
 
@@ -48,6 +49,9 @@ void eddic::init_global_types(Platform platform) {
     CFLOAT  = std::make_shared<StandardType>(platform, BaseType::FLOAT, true);
     CSTRING = std::make_shared<StandardType>(platform, BaseType::STRING, true);
     CVOID   = std::make_shared<StandardType>(platform, BaseType::VOID, true);
+
+    // Incomplete pointer type
+    POINTER    = std::make_shared<PointerType>();
 }
 
 /* Implementation of Type */
@@ -65,6 +69,10 @@ bool Type::is_structure() const {
 }
 
 bool Type::is_pointer() const {
+    return false;
+}
+
+bool Type::is_incomplete() const {
     return false;
 }
 
@@ -197,6 +205,7 @@ bool ArrayType::is_array() const {
 
 /* Implementation of PointerType  */
 
+PointerType::PointerType() : Type(INT->size()), incomplete(true) {}
 PointerType::PointerType(const std::shared_ptr<const Type> & sub_type) : Type(INT->size()), sub_type(sub_type) {}
 
 std::shared_ptr<const Type> PointerType::data_type() const {
@@ -204,6 +213,10 @@ std::shared_ptr<const Type> PointerType::data_type() const {
 }
 
 bool PointerType::is_pointer() const {
+    return true;
+}
+
+bool PointerType::is_incomplete() const {
     return true;
 }
 

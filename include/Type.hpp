@@ -99,6 +99,8 @@ class Type : public std::enable_shared_from_this<Type> {
          */
         virtual bool is_pointer() const;
 
+        virtual bool is_incomplete() const;
+
         virtual bool has_elements() const;
 
         /*!
@@ -241,9 +243,11 @@ struct ArrayType : public Type {
 struct PointerType : public Type {
     private:
         std::shared_ptr<const Type> sub_type;
+        bool incomplete = false;
 
     public:
-        PointerType(const std::shared_ptr<const Type> & sub_type);
+        PointerType();
+        explicit PointerType(const std::shared_ptr<const Type> & sub_type);
 
         /*!
          * Deleted copy constructor
@@ -258,6 +262,7 @@ struct PointerType : public Type {
         std::shared_ptr<const Type> data_type() const override;
 
         bool is_pointer() const override;
+        bool is_incomplete() const override;
 };
 
 /*!
@@ -299,6 +304,7 @@ extern std::shared_ptr<const Type> CHAR;
 extern std::shared_ptr<const Type> FLOAT;
 extern std::shared_ptr<const Type> STRING;
 extern std::shared_ptr<const Type> VOID;
+extern std::shared_ptr<const Type> POINTER;
 
 void init_global_types(Platform platform);
 
