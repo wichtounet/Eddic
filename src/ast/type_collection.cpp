@@ -94,7 +94,6 @@ struct IsResolved : public boost::static_visitor<bool> {
 };
 
 void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bool){
-    // 0. Sanity check: validate no double members
     if (structure.is_template_declaration()) {
         return;
     }
@@ -103,6 +102,8 @@ void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bo
     if (!structure.mangled_name.empty()) {
         return;
     }
+
+    // 0. Sanity check: validate no double members
 
     std::vector<std::string> names;
 
@@ -160,8 +161,6 @@ void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bo
 }
 
 void ast::TypeCollectionPass::apply_program_post(ast::SourceFile& program, bool indicator){
-    // TODO Implement more sanity checks for members
-
     // 2. We can collect all the templates
 
     if (!indicator) { // We only collect template declarations once
@@ -253,8 +252,15 @@ void ast::TypeCollectionPass::apply_program_post(ast::SourceFile& program, bool 
                         }
                     } else if (auto * member = boost::get<ast::ArrayDeclaration>(&block)) {
                         auto data_member_type = visit(ast::TypeTransformer(*context), member->arrayType);
+
+                        if (data_member_type->is_array()) {
+                            context->error_handler.semantical_exception("Multidimensional arrays are not permitted", *member);
+                        }
+
                         if (auto * ptr = boost::get<ast::Integer>(&member->size)) {
                             signature->members.emplace_back(member->arrayName, new_array_type(data_member_type, ptr->value));
+                        } else {
+                            context->error_handler.semantical_exception("Only arrays of fixed size are supported", *member);
                         }
                     }
                 }

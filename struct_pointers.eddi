@@ -1,0 +1,77 @@
+include <print>
+
+struct A {
+    int a;
+    str b;
+    B d;
+}
+
+struct B {
+    int a;
+    str b;
+}
+
+template <type T>
+struct C {
+    T a;
+}
+
+struct E extends C<bool> {
+    bool a;
+}
+
+struct D {
+    C<int> c;
+}
+
+void main(){
+    A a;
+    test(&a);
+}
+
+template <type T>
+struct Node {
+    Node<T> * next;
+}
+
+template <type T>
+struct List {
+    Node<T> * head;
+}
+
+struct Z {
+    List<int> list;
+}
+
+void test(A* a){
+    A* b = a;
+    
+    a.a = 55;
+    a.b = "55";
+    a.d.a = 55;
+    a.d.b = "55";
+
+    print(a.b);
+    print(a.d.a);
+    print(a.d.b);
+    print(b.a);
+    print(b.b);
+    print(a.a);
+    print("|");
+    print(a.b);
+    print("|");
+    print("|");
+    print(a.d.a);
+    print("|");
+    print(a.d.b);
+    print("|");
+    print(b.a);
+    print("|");
+    print(b.b);
+    print("|");
+    print("|");
+    print(b.d.a);
+    print("|");
+    print(b.d.b);
+    print("|");
+}
