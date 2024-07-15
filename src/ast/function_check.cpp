@@ -670,10 +670,10 @@ void ast::FunctionCheckPass::apply_program(ast::SourceFile& program, bool indica
         FunctionCheckerVisitor visitor(template_engine, "");
         visitor.context = context;
 
-        for(auto& block : program){
-            if(auto* ptr = boost::smart_get<ast::GlobalArrayDeclaration>(&block)){
+        for (auto it = program.begin(); it < program.end(); ++it) {
+            if(auto* ptr = boost::smart_get<ast::GlobalArrayDeclaration>(&*it)){
                 visit_non_variant(visitor, *ptr);
-            } else if(auto* ptr = boost::smart_get<ast::GlobalVariableDeclaration>(&block)){
+            } else if(auto* ptr = boost::smart_get<ast::GlobalVariableDeclaration>(&*it)){
                 visit_non_variant(visitor, *ptr);
             }
         }

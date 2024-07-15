@@ -27,8 +27,8 @@
 using namespace eddic;
 
 void ast::TypeFinalizationPass::apply_program_post(ast::SourceFile & program, bool ) {
-    for (auto & block : program) {
-        if (auto * structure = boost::get<ast::struct_definition>(&block)) {
+    for(auto it = program.begin(); it < program.end(); ++it){
+        if (auto * structure = boost::get<ast::struct_definition>(&*it)) {
             if (structure->is_template_declaration()) {
                 continue;
             }

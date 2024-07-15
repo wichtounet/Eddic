@@ -232,10 +232,10 @@ void ast::ContextAnnotationPass::apply_program(ast::SourceFile& program, bool in
     } else {
         currentContext = globalContext = program.context;
 
-        for(auto& block : program){
-            if(auto* ptr = boost::get<ast::GlobalVariableDeclaration>(&block)){
+        for(auto it = program.begin(); it < program.end(); ++it){
+            if(auto* ptr = boost::get<ast::GlobalVariableDeclaration>(&*it)){
                 ptr->context = currentContext;
-            } else if(auto* ptr = boost::get<ast::GlobalArrayDeclaration>(&block)){
+            } else if(auto* ptr = boost::get<ast::GlobalArrayDeclaration>(&*it)){
                 ptr->context = currentContext;
             }
         }

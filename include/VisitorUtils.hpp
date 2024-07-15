@@ -146,7 +146,9 @@ inline void visit_each(Visitor& visitor, std::vector<Visitable>& elements){
  */
 template<typename Visitor, typename Visitable>
 inline void visit_each(Visitor& visitor, std::deque<Visitable>& elements){
-    for_each(elements.begin(), elements.end(), [&](Visitable& visitable){ visit(visitor, visitable); });
+    for (auto it = elements.begin(); it < elements.end(); ++it) {
+        visit(visitor, *it);
+    }
 }
 
 /*!
@@ -176,7 +178,9 @@ inline void visit_each_non_variant(Visitor& visitor, std::vector<Visitable>& ele
  */
 template<typename Visitor, typename Visitable>
 inline void visit_each_non_variant(Visitor& visitor, std::deque<Visitable>& elements){
-    for_each(elements.begin(), elements.end(), [&](Visitable& visitable){ visit_non_variant(visitor, visitable); });
+    for (auto it = elements.begin(); it < elements.end(); ++it) {
+        visit_non_variant(visitor, *it);
+    }
 }
 
 /*!

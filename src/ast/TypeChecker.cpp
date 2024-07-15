@@ -401,9 +401,9 @@ void ast::TypeCheckingPass::apply_program(ast::SourceFile& program, bool){
 
     bool valid = true;
 
-    for(auto& block : program){
+    for (auto it = program.begin(); it < program.end(); ++it) {
         try {
-            visit(visitor, block);
+            visit(visitor, *it);
         } catch (const SemanticalException& e){
             if(!configuration->option_defined("quiet")){
                 output_exception(e, program.context);
