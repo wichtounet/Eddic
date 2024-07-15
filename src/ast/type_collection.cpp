@@ -16,6 +16,7 @@
 #include "GlobalContext.hpp"
 #include "FunctionContext.hpp"
 #include "mangling.hpp"
+#include "logging.hpp"
 #include "VisitorUtils.hpp"
 
 #include "ast/type_collection.hpp"
@@ -52,8 +53,10 @@ struct TemplateCollector : public boost::static_visitor<> {
 };
 
 struct IsResolved : public boost::static_visitor<bool> {
+    GlobalContext &                                                       context;
     std::unordered_map<std::string, std::shared_ptr<const eddic::Type>> & fully_resolved;
-    explicit IsResolved(std::unordered_map<std::string, std::shared_ptr<const eddic::Type>> & fully_resolved) : fully_resolved(fully_resolved) {}
+    IsResolved(GlobalContext & context, std::unordered_map<std::string, std::shared_ptr<const eddic::Type>> & fully_resolved) :
+            context(context), fully_resolved(fully_resolved) {}
 
     bool operator()(const ast::SimpleType& type) const {
         if (is_standard_type(type.type)) {
@@ -72,7 +75,20 @@ struct IsResolved : public boost::static_visitor<bool> {
     }
 
     bool operator()(const ast::TemplateType& type) const {
-        return std::ranges::all_of(type.template_types, [this](auto & tmp_type) { return visit(*this, tmp_type); });
+        // All template types must be resolved
+        if (!std::ranges::all_of(type.template_types, [this](auto & tmp_type) { return visit(*this, tmp_type); })) {
+            return false;
+        }
+
+        std::vector<std::shared_ptr<const eddic::Type>> template_types;
+
+        ast::TypeTransformer transformer(context);
+
+        for(auto& type : type.template_types){
+            template_types.push_back(visit(transformer, type));
+        }
+
+        return fully_resolved.contains(mangle_template_type(type.type, template_types));
     }
 };
 
@@ -158,7 +174,7 @@ void ast::TypeCollectionPass::apply_program_post(ast::SourceFile& program, bool 
     while (true) {
         bool progress = false;
 
-        IsResolved is_resolved(fully_resolved);
+        IsResolved is_resolved(*context, fully_resolved);
 
         for (auto & block : program) {
             if (auto * structure = boost::get<ast::struct_definition>(&block)) {
@@ -166,50 +182,53 @@ void ast::TypeCollectionPass::apply_program_post(ast::SourceFile& program, bool 
                     continue;
                 }
 
+                cpp_assert(!structure->mangled_name.empty(), "mangled_name is empty");
+
                 if (structure->struct_type) {
                     // This is already resolved
                     continue;
                 }
 
+                bool can_resolve = true;
                 if (structure->parent_type) {
+                    template_engine->check_type(*structure->parent_type, *structure);
+
                     if (!visit(is_resolved, *structure->parent_type)) {
-                        pending.insert(structure->mangled_name);
-                        continue;
+                        LOG<Trace>("Types") << "Structure \"" << structure->mangled_name << "\" cannot be resolved (parent)" << log::endl;
+                        can_resolve = false;
                     }
                 }
 
-                bool resolved_members = true;
                 for (auto & block : structure->blocks) {
                     if (auto * member = boost::get<ast::MemberDeclaration>(&block)) {
-                        if (!visit(is_resolved, member->type)) {
-                            resolved_members = false;
-                            break;
+                        template_engine->check_type(member->type, *member);
+
+                        if (can_resolve && !visit(is_resolved, member->type)) {
+                            can_resolve = false;
                         }
                     } else if (auto * member = boost::get<ast::ArrayDeclaration>(&block)) {
-                        if (!visit(is_resolved, member->arrayType)) {
-                            resolved_members = false;
-                            break;
+                        template_engine->check_type(member->arrayType, *member);
+
+                        if (can_resolve && !visit(is_resolved, member->arrayType)) {
+                            LOG<Trace>("Types") << "Structure \"" << structure->mangled_name << "\" cannot be resolved (member)" << log::endl;
+                            can_resolve = false;
                         }
                     }
                 }
 
-                if (!resolved_members) {
-                    pending.insert(structure->mangled_name);
-                    continue;
-                }
-
-                bool resolved_templates = true;
                 if (structure->is_template_instantation()) {
                     for (auto & type : structure->inst_template_types) {
-                        if (!visit(is_resolved, type)) {
-                            resolved_templates = false;
-                            break;
+                        template_engine->check_type(type, *structure);
+
+                        if (can_resolve && !visit(is_resolved, type)) {
+                            LOG<Trace>("Types") << "Structure \"" << structure->mangled_name << "\" cannot be resolved (template)" << log::endl;
+                            can_resolve = false;
                         }
                     }
 
                 }
 
-                if (!resolved_templates) {
+                if (!can_resolve) {
                     pending.insert(structure->mangled_name);
                     continue;
                 }
@@ -279,6 +298,8 @@ void ast::TypeCollectionPass::apply_program_post(ast::SourceFile& program, bool 
                         }
                     }
                 }
+
+                LOG<Trace>("Types") << "Structure \"" << structure->mangled_name << "\" is fully resolved (" << fully_resolved.size() << ")" << log::endl;
 
                 // Mark the structure as resolved
                 fully_resolved[structure->mangled_name] = structure->struct_type;
