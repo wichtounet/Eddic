@@ -281,16 +281,6 @@ void ast::PassManager::run_passes(){
                 class_instantiated.clear();
                 functions_instantiated.clear();
 
-                // Apply the current pass to instantiated structures
-                for(auto& struct_ : new_classes){
-                    apply_struct_instantiated(*pass, struct_);
-                }
-
-                // Apply the current pass to instantiated functions
-                for(auto& [context, function] : new_functions){
-                    apply_function_instantiated(*pass, function, context);
-                }
-
                 //Add the instantiated class and function templates to the actual program
 
                 for(auto& struct_ : new_classes){
@@ -311,11 +301,20 @@ void ast::PassManager::run_passes(){
                         }
                     }
                 }
+
+                // Apply the current pass to instantiated structures
+                for(auto& struct_ : new_classes){
+                    apply_struct_instantiated(*pass, struct_);
+                }
+
+                // Apply the current pass to instantiated functions
+                for(auto& [context, function] : new_functions){
+                    apply_function_instantiated(*pass, function, context);
+                }
             }
 
             //The next passes will have to apply it again to fresh functions
             applied_passes.push_back(pass);
-
         }
     }
 }
