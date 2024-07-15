@@ -22,6 +22,8 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
         return;
     }
 
+    cpp_assert(struct_.struct_type, "The struct type should be set earlier");
+
     auto platform = context->target_platform();
 
     bool default_constructor = false;
@@ -75,7 +77,7 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
     //Generate copy constructor if necessary
     if(!copy_constructor){
         auto type = struct_.struct_type;
-        auto struct_type = context->get_struct(type->mangle());
+        auto struct_type = context->get_struct_safe(type->mangle());
 
         bool possible = true;
         for(auto& member : struct_type->members){
