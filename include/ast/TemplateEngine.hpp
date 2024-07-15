@@ -30,7 +30,7 @@ struct TemplateEngine {
         using LocalFunctionInstantiationMap = std::unordered_multimap<std::string, std::vector<ast::Type>>;
         using FunctionInstantiationMap      = std::unordered_map<std::string, LocalFunctionInstantiationMap>;
 
-        using ClassTemplateMap      = std::unordered_multimap<std::string, ast::struct_definition *>;
+        using ClassTemplateMap      = std::unordered_multimap<std::string, ast::struct_definition>;
         using ClassInstantiationMap = std::unordered_multimap<std::string, std::vector<ast::Type>>;
 
         void check_function(ast::FunctionCall& function_call);

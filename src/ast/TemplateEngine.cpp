@@ -889,7 +889,7 @@ void ast::TemplateEngine::check_type(ast::Type& type, x3::file_position_tagged& 
         }
 
         while(it != class_templates.end()){
-            auto& struct_declaration = *it->second;
+            auto& struct_declaration = it->second;
             auto& source_types = struct_declaration.decl_template_types;
 
             if(source_types.size() == template_types.size()){
@@ -941,8 +941,7 @@ void ast::TemplateEngine::check_type(ast::Type& type, x3::file_position_tagged& 
 void ast::TemplateEngine::add_template_struct(const std::string& struct_, ast::struct_definition& declaration){
     LOG<Trace>("Template") << "Collected class template " << struct_ << log::endl;
 
-    //TODO Don't store the pointer
-    class_templates.insert(ast::TemplateEngine::ClassTemplateMap::value_type(struct_, &declaration));
+    class_templates.insert(ast::TemplateEngine::ClassTemplateMap::value_type(struct_, declaration));
 }
 
 void ast::TemplateEngine::add_template_function(const std::string& context, const std::string& function, ast::TemplateFunctionDeclaration&){
