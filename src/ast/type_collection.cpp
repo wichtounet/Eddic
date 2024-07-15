@@ -71,7 +71,8 @@ struct IsResolved : public boost::static_visitor<bool> {
     }
 
     bool operator()(const ast::PointerType& type) const {
-        return visit(*this, type.type.get());
+        // Pointer types can be resolved directly through incomplete pointers
+        return true;
     }
 
     bool operator()(const ast::TemplateType& type) const {
@@ -235,7 +236,7 @@ void ast::TypeCollectionPass::apply_program_post(ast::SourceFile& program, bool 
 
                 // At this point, the structure is entirely resolvable
 
-                auto signature = context->get_struct(structure->mangled_name);
+                auto signature = context->get_struct_safe(structure->mangled_name);
 
                 // Resolve the parent type if any
                 if (structure->parent_type) {
@@ -245,7 +246,11 @@ void ast::TypeCollectionPass::apply_program_post(ast::SourceFile& program, bool 
                 // Resolve and collect all members
                 for (auto & block : structure->blocks) {
                     if (auto * member = boost::get<ast::MemberDeclaration>(&block)) {
-                        signature->members.emplace_back(member->name, visit(ast::TypeTransformer(*context), member->type));
+                        if (boost::smart_get<ast::PointerType>(&member->type)) {
+                            signature->members.emplace_back(member->name, POINTER);
+                        } else {
+                            signature->members.emplace_back(member->name, visit(ast::TypeTransformer(*context), member->type));
+                        }
                     } else if (auto * member = boost::get<ast::ArrayDeclaration>(&block)) {
                         auto data_member_type = visit(ast::TypeTransformer(*context), member->arrayType);
                         if (auto * ptr = boost::get<ast::Integer>(&member->size)) {

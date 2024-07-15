@@ -36,6 +36,20 @@ void ast::TypeFinalizationPass::apply_program_post(ast::SourceFile & program, bo
             if (!structure->struct_type) {
                 context->error_handler.semantical_exception("The structure " + structure->name + " cannot be fully resolved", *structure);
             }
+
+            auto signature = context->get_struct_safe(structure->mangled_name);
+
+            // Finalize all member pointers
+
+            for (auto & block : structure->blocks) {
+                if (auto * member = boost::get<ast::MemberDeclaration>(&block)) {
+                    auto & struct_member = (*signature)[member->name];
+
+                    if (struct_member.type->is_incomplete()) {
+                        struct_member.type = visit(ast::TypeTransformer(*context), member->type);
+                    }
+                }
+            }
         }
     }
 }
