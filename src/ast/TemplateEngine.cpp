@@ -756,9 +756,9 @@ bool ast::TemplateEngine::is_class_instantiated(const std::string& name, const s
 }
 
 void ast::TemplateEngine::check_function(ast::FunctionCall& function_call){
-   if(function_call.template_types.size() > 0){
+    if (function_call.template_types.size() > 0) {
         check_function(function_call.template_types, function_call.function_name, function_call, "");
-   }
+    }
 }
 
 void ast::TemplateEngine::check_member_function(std::shared_ptr<const eddic::Type> type, ast::Operation& op, x3::file_position_tagged& position){
@@ -822,15 +822,21 @@ void ast::TemplateEngine::check_function(std::vector<ast::Type>& template_types,
 
     auto & program = pass_manager.program();
 
-    if(!function_templates.count(context) || !function_templates[context].count(name)){
+    if (!function_templates.contains(context) || !function_templates[context].contains(name)) {
         program.context->error_handler.semantical_exception("There are no registered template function named " + name, position);
     }
 
-    auto & [struct_, function] = function_templates[context][name];
+    auto it = function_templates[context].find(name);
 
-    if (function.template_types.size() == template_types.size()) {
-        instantiate_function(struct_, function, context, name, template_types);
-        return;
+    while (it != function_templates[context].end()) {
+        auto & [struct_, function] = it->second;
+
+        if (function.template_types.size() == template_types.size()) {
+            instantiate_function(struct_, function, context, name, template_types);
+            return;
+        }
+
+        ++it;
     }
 
     pass_manager.program().context->error_handler.semantical_exception("No matching template function " + name, position);
@@ -906,11 +912,11 @@ void ast::TemplateEngine::add_template_struct(const std::string& struct_, ast::s
 void ast::TemplateEngine::add_template_function(const std::string& function, ast::TemplateFunctionDeclaration& declaration){
     LOG<Trace>("Template") << "Collected function template " << function << log::endl;
 
-    function_templates[""][function] = std::make_pair((ast::struct_definition *) nullptr, declaration);
+    function_templates[""].insert(function_template_map_sub::value_type(function, std::make_pair((ast::struct_definition *) nullptr, declaration)));
 }
 
 void ast::TemplateEngine::add_template_member_function(const std::string& function, ast::struct_definition & struct_, ast::TemplateFunctionDeclaration& declaration){
     LOG<Trace>("Template") << "Collected member function template " << function <<" in " << struct_.mangled_name << log::endl;
 
-    function_templates[struct_.mangled_name][function] = std::make_pair(&struct_, declaration);
+    function_templates[struct_.mangled_name].insert(function_template_map_sub::value_type(function, std::make_pair(&struct_, declaration)));
 }

@@ -25,7 +25,8 @@ struct TemplateEngine {
     public:
         TemplateEngine(ast::PassManager& pass_manager);
 
-        using function_template_map = std::unordered_map<std::string, std::unordered_map<std::string, std::pair<ast::struct_definition *, ast::TemplateFunctionDeclaration>>>;
+        using function_template_map_sub = std::unordered_multimap<std::string, std::pair<ast::struct_definition *, ast::TemplateFunctionDeclaration>>;
+        using function_template_map = std::unordered_map<std::string, function_template_map_sub>;
 
         using LocalFunctionInstantiationMap = std::unordered_multimap<std::string, std::vector<ast::Type>>;
         using FunctionInstantiationMap      = std::unordered_map<std::string, LocalFunctionInstantiationMap>;

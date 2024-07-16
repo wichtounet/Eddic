@@ -68,13 +68,15 @@ void apply_pass(ast::Pass & pass, ast::SourceFile& program, Configuration & conf
 
         bool valid = true;
 
-        for (auto it = program.begin(); it < program.end(); ++it) {
+        const auto end = program.size(); // It is important that we stop here since we would otherwise apply multiple times
+        for (size_t i = 0; i < end; ++i) {
+            auto & block = program[i];
             try {
-                if (auto * ptr = boost::get<ast::struct_definition>(&*it)) {
+                if (auto * ptr = boost::get<ast::struct_definition>(&block)) {
                     if(!ptr->is_template_declaration()){
                         apply_pass(pass, *ptr);
                     }
-                } else if (auto * ptr = boost::get<ast::TemplateFunctionDeclaration>(&*it)) {
+                } else if (auto * ptr = boost::get<ast::TemplateFunctionDeclaration>(&block)) {
                     if(!ptr->is_template()){
                         pass.apply_function(*ptr);
                     }
