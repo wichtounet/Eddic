@@ -17,7 +17,7 @@
 namespace eddic::ast {
 
 struct TypeFinalizationPass : ContextAwarePass {
-    void apply_program_post(ast::SourceFile& program, bool indicator) override;
+    void apply_struct(ast::struct_definition & struct_, bool indicator) override;
 };
 
 } // namespace eddic::ast
