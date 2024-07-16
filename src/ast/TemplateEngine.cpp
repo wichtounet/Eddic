@@ -776,9 +776,17 @@ void ast::TemplateEngine::check_member_function(std::shared_ptr<const eddic::Typ
     }
 }
 
-void ast::TemplateEngine::instantiate_function(ast::TemplateFunctionDeclaration& function, const std::string& context, const std::string& name, std::vector<ast::Type>& template_types){
+void ast::TemplateEngine::instantiate_function(ast::struct_definition *           struct_,
+                                               ast::TemplateFunctionDeclaration & function,
+                                               const std::string &                context,
+                                               const std::string &                name,
+                                               std::vector<ast::Type> &           template_types) {
     if(!is_instantiated(name, context, template_types)){
-        LOG<Info>("Template") << "Instantiate function template " << name << log::endl;
+        if (struct_) {
+            LOG<Info>("Template") << "Instantiate member function template " << name << " in " << struct_->mangled_name<< log::endl;
+        } else {
+            LOG<Info>("Template") << "Instantiate function template " << name << log::endl;
+        }
 
         //Instantiate the function
         ast::TemplateFunctionDeclaration declaration;
@@ -801,81 +809,32 @@ void ast::TemplateEngine::instantiate_function(ast::TemplateFunctionDeclaration&
         //Mark it as instantiated
         function_template_instantiations[context].insert(ast::TemplateEngine::LocalFunctionInstantiationMap::value_type(name, template_types));
 
-        pass_manager.function_instantiated(declaration, context);
+        if (struct_) {
+            pass_manager.member_function_instantiated(*struct_, declaration);
+        } else {
+            pass_manager.function_instantiated(declaration);
+        }
     }
-
-    return;
 }
 
 void ast::TemplateEngine::check_function(std::vector<ast::Type>& template_types, const std::string& name, x3::file_position_tagged& position, const std::string& context){
     LOG<Info>("Template") << "Look for function template " << name << " in " << context << log::endl;
 
+    auto & program = pass_manager.program();
+
     if(!function_templates.count(context) || !function_templates[context].count(name)){
-        pass_manager.program().context->error_handler.semantical_exception("There are no registered template function named " + name, position);
+        program.context->error_handler.semantical_exception("There are no registered template function named " + name, position);
     }
 
-    if(context.empty()){
-        for(auto& block : pass_manager.program()){
-            if(auto* ptr = boost::get<ast::TemplateFunctionDeclaration>(&block)){
-                auto& function = *ptr;
+    auto & [struct_, function] = function_templates[context][name];
 
-                if(!function.is_template()){
-                    continue;
-                }
-
-                if(function.functionName != name){
-                    continue;
-                }
-
-                auto& source_types = function.template_types;
-
-                if(source_types.size() == template_types.size()){
-                    instantiate_function(function, context, name, template_types);
-
-                    return;
-                }
-            }
-        }
-    } else {
-        for(auto& block : pass_manager.program()){
-            if(auto* ptr = boost::get<ast::struct_definition>(&block)){
-                auto& struct_ = *ptr;
-
-                if(!struct_.struct_type || struct_.struct_type->mangle() != context){
-                    continue;
-                }
-
-                for(auto& struct_block : struct_.blocks){
-                    if(auto* ptr = boost::get<ast::TemplateFunctionDeclaration>(&struct_block)){
-                        auto& function = *ptr;
-
-                        if(!function.is_template()){
-                            continue;
-                        }
-
-                        if(function.functionName != name){
-                            continue;
-                        }
-
-                        auto& source_types = function.template_types;
-
-                        if(source_types.size() == template_types.size()){
-                            instantiate_function(function, context, name, template_types);
-
-                            return;
-                        }
-                    }
-                }
-
-                // struct names are unique
-                break;
-            }
-        }
+    if (function.template_types.size() == template_types.size()) {
+        instantiate_function(struct_, function, context, name, template_types);
+        return;
     }
 
     pass_manager.program().context->error_handler.semantical_exception("No matching template function " + name, position);
 }
-
 
 void ast::TemplateEngine::check_type(ast::Type& type, x3::file_position_tagged& position){
     if(auto* ptr = boost::smart_get<ast::TemplateType>(&type)){
@@ -944,8 +903,14 @@ void ast::TemplateEngine::add_template_struct(const std::string& struct_, ast::s
     class_templates.insert(ast::TemplateEngine::ClassTemplateMap::value_type(struct_, declaration));
 }
 
-void ast::TemplateEngine::add_template_function(const std::string& context, const std::string& function, ast::TemplateFunctionDeclaration&){
-    LOG<Trace>("Template") << "Collected function template " << function <<" in context " << context << log::endl;
+void ast::TemplateEngine::add_template_function(const std::string& function, ast::TemplateFunctionDeclaration& declaration){
+    LOG<Trace>("Template") << "Collected function template " << function << log::endl;
 
-    function_templates[context].insert(function);
+    function_templates[""][function] = std::make_pair((ast::struct_definition *) nullptr, declaration);
+}
+
+void ast::TemplateEngine::add_template_member_function(const std::string& function, ast::struct_definition & struct_, ast::TemplateFunctionDeclaration& declaration){
+    LOG<Trace>("Template") << "Collected member function template " << function <<" in " << struct_.mangled_name << log::endl;
+
+    function_templates[struct_.mangled_name][function] = std::make_pair(&struct_, declaration);
 }

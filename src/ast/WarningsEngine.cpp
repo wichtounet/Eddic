@@ -148,7 +148,7 @@ struct Inspector : public boost::static_visitor<> {
             for(auto& block : program){
                 if(auto* ptr = boost::get<ast::struct_definition>(&block)){
                     if(!ptr->is_template_declaration() && ptr->header == file){
-                        auto struct_ = context->get_struct(ptr->struct_type->mangle());
+                        auto struct_ = context->get_struct_safe(ptr->mangled_name);
 
                         if(struct_->get_references() > 0){
                             return;
@@ -183,7 +183,7 @@ struct Inspector : public boost::static_visitor<> {
 
             if(!declaration.standard){
                 if(configuration->option_defined("warning-unused")){
-                    auto struct_ = context->get_struct(declaration.struct_type->mangle());
+                    auto struct_ = context->get_struct_safe(declaration.mangled_name);
 
                     if(struct_->get_references() == 0){
                         warn(context->error_handler.to_string(declaration), "unused structure '" + declaration.name + "'");

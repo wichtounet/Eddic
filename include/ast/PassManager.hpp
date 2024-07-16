@@ -32,7 +32,8 @@ class PassManager {
         void init_passes();
         void run_passes();
 
-        void function_instantiated(ast::TemplateFunctionDeclaration& function, const std::string& context);
+        void function_instantiated(ast::TemplateFunctionDeclaration& function);
+        void member_function_instantiated(ast::struct_definition & struct_, ast::TemplateFunctionDeclaration& function);
         void struct_instantiated(ast::struct_definition& struct_);
 
         ast::SourceFile& program() {
@@ -40,7 +41,8 @@ class PassManager {
         }
 
     private:
-        void apply_function_instantiated(Pass & pass, ast::TemplateFunctionDeclaration& function, const std::string& context);
+        void apply_function_instantiated(Pass & pass, ast::TemplateFunctionDeclaration& function);
+        void apply_member_function_instantiated(Pass & pass, ast::struct_definition & struct_, ast::TemplateFunctionDeclaration& function);
         void apply_struct_instantiated(Pass & pass, ast::struct_definition& struct_);
 
         unsigned int template_depth = 0;
@@ -55,7 +57,7 @@ class PassManager {
         std::vector<std::shared_ptr<Pass>> applied_passes;
 
         std::vector<ast::struct_definition> class_instantiated;
-        std::vector<std::pair<std::string, ast::TemplateFunctionDeclaration>> functions_instantiated;
+        std::vector<std::pair<ast::struct_definition *, ast::TemplateFunctionDeclaration>> functions_instantiated;
 
         void inc_depth();
         void dec_depth();

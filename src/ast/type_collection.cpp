@@ -31,7 +31,7 @@ using namespace eddic;
 struct TemplateCollector : public boost::static_visitor<> {
     ast::TemplateEngine& template_engine;
 
-    std::string parent_struct;
+    ast::struct_definition * parent_struct = nullptr;
 
     explicit TemplateCollector(ast::TemplateEngine& template_engine) : template_engine(template_engine) {}
 
@@ -39,7 +39,11 @@ struct TemplateCollector : public boost::static_visitor<> {
 
     void operator()(ast::TemplateFunctionDeclaration& declaration){
         if(declaration.is_template()){
-            template_engine.add_template_function(parent_struct, declaration.functionName, declaration);
+            if (parent_struct) {
+                template_engine.add_template_member_function(declaration.functionName, *parent_struct, declaration);
+            } else {
+                template_engine.add_template_function(declaration.functionName, declaration);
+            }
         }
     }
 
@@ -95,10 +99,6 @@ struct IsResolved : public boost::static_visitor<bool> {
 };
 
 void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bool){
-    if (structure.is_template_declaration()) {
-        return;
-    }
-
     // If the structure is already annotated, we skip over (this must be a template instantiation)
     if (structure.mangled_name.empty()) {
         // 0. Sanity check: validate no double members
@@ -142,6 +142,8 @@ void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bo
             mangled_name = mangle_custom_type(structure.name);
         }
 
+        cpp_assert(!mangled_name.empty(), "Invalid type mangling");
+
         structure.mangled_name = mangled_name;
 
         // 2. Register the structure signature
@@ -154,7 +156,7 @@ void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bo
 
         // Collect the function templates
         TemplateCollector template_collector(*template_engine);
-        template_collector.parent_struct = structure.mangled_name;
+        template_collector.parent_struct = &structure;
         visit_each(template_collector, structure.blocks);
 
         pending.insert(&structure);
