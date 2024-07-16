@@ -56,7 +56,7 @@ class PassManager {
         std::vector<std::shared_ptr<Pass>> passes;
         std::vector<std::shared_ptr<Pass>> applied_passes;
 
-        std::vector<ast::struct_definition> class_instantiated;
+        std::vector<ast::struct_definition*> class_instantiated;
         std::vector<std::pair<ast::struct_definition *, ast::TemplateFunctionDeclaration>> functions_instantiated;
 
         void inc_depth();

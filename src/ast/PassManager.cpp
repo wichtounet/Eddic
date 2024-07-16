@@ -68,15 +68,15 @@ void apply_pass(ast::Pass & pass, ast::SourceFile& program, Configuration & conf
 
         bool valid = true;
 
-        for(auto& block : program){
+        for (auto it = program.begin(); it < program.end(); ++it) {
             try {
-                if(auto* ptr = boost::get<ast::TemplateFunctionDeclaration>(&block)){
-                    if(!ptr->is_template()){
-                        pass.apply_function(*ptr);
-                    }
-                } else if(auto* ptr = boost::get<ast::struct_definition>(&block)){
+                if (auto * ptr = boost::get<ast::struct_definition>(&*it)) {
                     if(!ptr->is_template_declaration()){
                         apply_pass(pass, *ptr);
+                    }
+                } else if (auto * ptr = boost::get<ast::TemplateFunctionDeclaration>(&*it)) {
+                    if(!ptr->is_template()){
+                        pass.apply_function(*ptr);
                     }
                 }
             } catch (const SemanticalException& e){
@@ -243,15 +243,21 @@ void ast::PassManager::struct_instantiated(ast::struct_definition& struct_){
 
     inc_depth();
 
-    for(auto& pass : applied_passes){
-        apply_struct_instantiated(*pass, struct_);
+    ast::SourceFileBlock block(struct_);
+    auto & new_structure = program_.emplace_back(block);
+    auto * new_struct = boost::get<struct_definition>(&new_structure);
+
+    cpp_assert(new_struct, "Problem with program insertion");
+
+    for (auto & pass : applied_passes) {
+        apply_struct_instantiated(*pass, *new_struct);
     }
 
     dec_depth();
 
-    LOG<Info>("Passes") << "Passes applied to instantiated struct \"" << struct_.name << "\"" << log::endl;
+    LOG<Info>("Passes") << "Passes applied to instantiated struct \"" << new_struct->name << "\"" << log::endl;
 
-    class_instantiated.push_back(struct_);
+    class_instantiated.push_back(new_struct);
 }
 
 void ast::PassManager::inc_depth(){
@@ -297,9 +303,8 @@ void ast::PassManager::run_passes(){
 
                 // Add structures to the program and apply passes
 
-                for (auto & struct_ : new_classes) {
-                    auto & new_structure = program_.emplace_back(struct_);
-                    apply_struct_instantiated(*pass, boost::get<ast::struct_definition>(new_structure));
+                for (auto * struct_ : new_classes) {
+                    apply_struct_instantiated(*pass, *struct_);
                 }
 
                 // Add functions to the program and apply passes
