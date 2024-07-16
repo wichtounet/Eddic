@@ -68,15 +68,15 @@ void apply_pass(ast::Pass & pass, ast::SourceFile& program, Configuration & conf
 
         bool valid = true;
 
-        for (auto it = program.begin(); it < program.end(); ++it) {
+        for(auto& block : program){
             try {
-                if (auto * ptr = boost::get<ast::struct_definition>(&*it)) {
-                    if(!ptr->is_template_declaration()){
-                        apply_pass(pass, *ptr);
-                    }
-                } else if (auto * ptr = boost::get<ast::TemplateFunctionDeclaration>(&*it)) {
+                if(auto* ptr = boost::get<ast::TemplateFunctionDeclaration>(&block)){
                     if(!ptr->is_template()){
                         pass.apply_function(*ptr);
+                    }
+                } else if(auto* ptr = boost::get<ast::struct_definition>(&block)){
+                    if(!ptr->is_template_declaration()){
+                        apply_pass(pass, *ptr);
                     }
                 }
             } catch (const SemanticalException& e){
@@ -178,8 +178,8 @@ void ast::PassManager::apply_function_instantiated(Pass & pass, ast::TemplateFun
         if (context.empty()) {
             pass.apply_function(function);
         } else {
-            for (auto it = program_.begin(); it < program_.end(); ++it) {
-                if (auto * struct_type = boost::get<ast::struct_definition>(&*it)) {
+            for (auto & block : program_) {
+                if (auto * struct_type = boost::get<ast::struct_definition>(&block)) {
                     if (!struct_type->is_template_declaration() && struct_type->struct_type->mangle() == context) {
                         pass.apply_struct(*struct_type, true);
                         pass.apply_struct_function(function);
@@ -230,21 +230,15 @@ void ast::PassManager::struct_instantiated(ast::struct_definition& struct_){
 
     inc_depth();
 
-    ast::SourceFileBlock block(struct_);
-    auto & new_structure = program_.emplace_back(block);
-    auto * new_struct = boost::get<struct_definition>(&new_structure);
-
-    cpp_assert(new_struct, "Problem with program insertion");
-
-    for (auto & pass : applied_passes) {
-        apply_struct_instantiated(*pass, *new_struct);
+    for(auto& pass : applied_passes){
+        apply_struct_instantiated(*pass, struct_);
     }
 
     dec_depth();
 
-    LOG<Info>("Passes") << "Passes applied to instantiated struct \"" << new_struct->name << "\"" << log::endl;
+    LOG<Info>("Passes") << "Passes applied to instantiated struct \"" << struct_.name << "\"" << log::endl;
 
-    class_instantiated.push_back(new_struct);
+    class_instantiated.push_back(struct_);
 }
 
 void ast::PassManager::inc_depth(){
@@ -290,8 +284,9 @@ void ast::PassManager::run_passes(){
 
                 // Add structures to the program and apply passes
 
-                for (auto * struct_ : new_classes) {
-                    apply_struct_instantiated(*pass, *struct_);
+                for (auto & struct_ : new_classes) {
+                    auto & new_structure = program_.emplace_back(struct_);
+                    apply_struct_instantiated(*pass, boost::get<ast::struct_definition>(new_structure));
                 }
 
                 // Add functions to the program and apply passes

@@ -34,7 +34,14 @@ namespace ast {
  * \typedef SourceFileBlock
  * \brief A first level block in a source file.
  */
-using SourceFileBlock = x3::variant<TemplateFunctionDeclaration, GlobalVariableDeclaration, GlobalArrayDeclaration, StandardImport, Import, struct_definition>;
+typedef x3::variant<
+            TemplateFunctionDeclaration,
+            GlobalVariableDeclaration,
+            GlobalArrayDeclaration,
+            StandardImport,
+            Import,
+            struct_definition
+        > SourceFileBlock;
 
 /*!
  * \class ASTSourceFile
