@@ -15,6 +15,7 @@
 #include "Type.hpp"
 #include "GlobalContext.hpp"
 #include "FunctionContext.hpp"
+#include "ast/ContextAwarePass.hpp"
 #include "mangling.hpp"
 #include "logging.hpp"
 #include "VisitorUtils.hpp"
@@ -99,231 +100,225 @@ void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bo
     }
 
     // If the structure is already annotated, we skip over (this must be a template instantiation)
-    if (!structure.mangled_name.empty()) {
-        return;
-    }
+    if (structure.mangled_name.empty()) {
+        // 0. Sanity check: validate no double members
 
-    // 0. Sanity check: validate no double members
+        std::vector<std::string> names;
 
-    std::vector<std::string> names;
+        for (auto & block : structure.blocks) {
+            if (auto * ptr = boost::get<ast::MemberDeclaration>(&block)) {
+                auto & member = *ptr;
 
-    for (auto & block : structure.blocks) {
-        if (auto * ptr = boost::get<ast::MemberDeclaration>(&block)) {
-            auto & member = *ptr;
+                if (std::find(names.begin(), names.end(), member.name) != names.end()) {
+                    context->error_handler.semantical_exception("The member " + member.name + " has already been defined", member);
+                }
 
-            if (std::find(names.begin(), names.end(), member.name) != names.end()) {
-                context->error_handler.semantical_exception("The member " + member.name + " has already been defined", member);
+                names.push_back(member.name);
+            } else if (auto * ptr = boost::get<ast::ArrayDeclaration>(&block)) {
+                auto & member = *ptr;
+                auto & name   = member.arrayName;
+
+                if (std::find(names.begin(), names.end(), name) != names.end()) {
+                    context->error_handler.semantical_exception("The member " + name + " has already been defined", member);
+                }
+
+                names.push_back(name);
             }
-
-            names.push_back(member.name);
-        } else if (auto * ptr = boost::get<ast::ArrayDeclaration>(&block)) {
-            auto & member = *ptr;
-            auto & name   = member.arrayName;
-
-            if (std::find(names.begin(), names.end(), name) != names.end()) {
-                context->error_handler.semantical_exception("The member " + name + " has already been defined", member);
-            }
-
-            names.push_back(name);
-        }
-    }
-
-    // Prepare the mangled name
-
-    std::vector<std::shared_ptr<const eddic::Type>> template_types;
-    std::string                                     mangled_name;
-    if (structure.is_template_instantation()) {
-        ast::TypeTransformer transformer(*context);
-
-        for (auto & type : structure.inst_template_types) {
-            template_types.push_back(visit(transformer, type));
         }
 
-        mangled_name = mangle_template_type(structure.name, template_types);
-    } else {
-        mangled_name = mangle_custom_type(structure.name);
-    }
+        // 1. Prepare the mangled name
 
-    structure.mangled_name = mangled_name;
+        std::vector<std::shared_ptr<const eddic::Type>> template_types;
+        std::string                                     mangled_name;
+        if (structure.is_template_instantation()) {
+            ast::TypeTransformer transformer(*context);
 
-    // Register the structure signature
+            for (auto & type : structure.inst_template_types) {
+                template_types.push_back(visit(transformer, type));
+            }
 
-    if (context->struct_exists(mangled_name)) {
-        context->error_handler.semantical_exception("The structure " + mangled_name + " has already been defined", structure);
-    }
+            mangled_name = mangle_template_type(structure.name, template_types);
+        } else {
+            mangled_name = mangle_custom_type(structure.name);
+        }
 
-    context->add_struct(std::make_shared<eddic::Struct>(mangled_name));
+        structure.mangled_name = mangled_name;
 
-    // Collect the function templates
-    TemplateCollector template_collector(*template_engine);
-    template_collector.parent_struct = structure.mangled_name;
-    visit_each(template_collector, structure.blocks);
-}
+        // 2. Register the structure signature
 
-void ast::TypeCollectionPass::apply_program_post(ast::SourceFile& program, bool indicator){
-    // 2. We can collect all the templates
+        if (context->struct_exists(mangled_name)) {
+            context->error_handler.semantical_exception("The structure " + mangled_name + " has already been defined", structure);
+        }
 
-    if (!indicator) { // We only collect template declarations once
+        context->add_struct(std::make_shared<eddic::Struct>(mangled_name));
+
+        // Collect the function templates
         TemplateCollector template_collector(*template_engine);
-        template_collector(program);
+        template_collector.parent_struct = structure.mangled_name;
+        visit_each(template_collector, structure.blocks);
+
+        pending.insert(&structure);
     }
 
     // 3. We try to fully resolve all types
-    // TODO, we should only work on the pending list
 
     while (true) {
         bool progress = false;
 
         IsResolved is_resolved(*context, fully_resolved);
 
-        for (auto it = program.begin(); it < program.end(); ++it) {
-            if (auto * structure = boost::get<ast::struct_definition>(&*it)) {
-                if (structure->is_template_declaration()) {
-                    continue;
+        auto current_pass = pending;
+
+        for (auto * structure  :current_pass) {
+            cpp_assert(!structure->mangled_name.empty(), "mangled_name is empty");
+
+            if (structure->struct_type) {
+                // This is already resolved
+                continue;
+            }
+
+            bool can_resolve = true;
+            if (structure->parent_type) {
+                template_engine->check_type(*structure->parent_type, *structure);
+
+                if (!visit(is_resolved, *structure->parent_type)) {
+                    LOG<Trace>("Types") << "Structure \"" << structure->mangled_name << "\" cannot be resolved (parent)" << log::endl;
+                    can_resolve = false;
                 }
+            }
 
-                cpp_assert(!structure->mangled_name.empty(), "mangled_name is empty");
+            for (auto & block : structure->blocks) {
+                if (auto * member = boost::get<ast::MemberDeclaration>(&block)) {
+                    template_engine->check_type(member->type, *member);
 
-                if (structure->struct_type) {
-                    // This is already resolved
-                    continue;
+                    if (can_resolve && !visit(is_resolved, member->type)) {
+                        can_resolve = false;
+                    }
+                } else if (auto * member = boost::get<ast::ArrayDeclaration>(&block)) {
+                    template_engine->check_type(member->arrayType, *member);
+
+                    if (can_resolve && !visit(is_resolved, member->arrayType)) {
+                        LOG<Trace>("Types") << "Structure \"" << structure->mangled_name << "\" cannot be resolved (member)" << log::endl;
+                        can_resolve = false;
+                    }
                 }
+            }
 
-                bool can_resolve = true;
-                if (structure->parent_type) {
-                    template_engine->check_type(*structure->parent_type, *structure);
+            if (structure->is_template_instantation()) {
+                for (auto & type : structure->inst_template_types) {
+                    template_engine->check_type(type, *structure);
 
-                    if (!visit(is_resolved, *structure->parent_type)) {
-                        LOG<Trace>("Types") << "Structure \"" << structure->mangled_name << "\" cannot be resolved (parent)" << log::endl;
+                    if (can_resolve && !visit(is_resolved, type)) {
+                        LOG<Trace>("Types") << "Structure \"" << structure->mangled_name << "\" cannot be resolved (template)" << log::endl;
                         can_resolve = false;
                     }
                 }
 
-                for (auto & block : structure->blocks) {
-                    if (auto * member = boost::get<ast::MemberDeclaration>(&block)) {
-                        template_engine->check_type(member->type, *member);
-
-                        if (can_resolve && !visit(is_resolved, member->type)) {
-                            can_resolve = false;
-                        }
-                    } else if (auto * member = boost::get<ast::ArrayDeclaration>(&block)) {
-                        template_engine->check_type(member->arrayType, *member);
-
-                        if (can_resolve && !visit(is_resolved, member->arrayType)) {
-                            LOG<Trace>("Types") << "Structure \"" << structure->mangled_name << "\" cannot be resolved (member)" << log::endl;
-                            can_resolve = false;
-                        }
-                    }
-                }
-
-                if (structure->is_template_instantation()) {
-                    for (auto & type : structure->inst_template_types) {
-                        template_engine->check_type(type, *structure);
-
-                        if (can_resolve && !visit(is_resolved, type)) {
-                            LOG<Trace>("Types") << "Structure \"" << structure->mangled_name << "\" cannot be resolved (template)" << log::endl;
-                            can_resolve = false;
-                        }
-                    }
-
-                }
-
-                if (!can_resolve) {
-                    pending.insert(structure->mangled_name);
-                    continue;
-                }
-
-                // At this point, the structure is entirely resolvable
-
-                auto signature = context->get_struct_safe(structure->mangled_name);
-
-                // Resolve the parent type if any
-                if (structure->parent_type) {
-                    signature->parent_type = visit(ast::TypeTransformer(*context), *structure->parent_type);
-                }
-
-                // Resolve and collect all members
-                for (auto & block : structure->blocks) {
-                    if (auto * member = boost::get<ast::MemberDeclaration>(&block)) {
-                        if (boost::smart_get<ast::PointerType>(&member->type)) {
-                            signature->members.emplace_back(member->name, POINTER);
-                        } else {
-                            signature->members.emplace_back(member->name, visit(ast::TypeTransformer(*context), member->type));
-                        }
-                    } else if (auto * member = boost::get<ast::ArrayDeclaration>(&block)) {
-                        auto data_member_type = visit(ast::TypeTransformer(*context), member->arrayType);
-
-                        if (data_member_type->is_array()) {
-                            context->error_handler.semantical_exception("Multidimensional arrays are not permitted", *member);
-                        }
-
-                        if (auto * ptr = boost::get<ast::Integer>(&member->size)) {
-                            signature->members.emplace_back(member->arrayName, new_array_type(data_member_type, ptr->value));
-                        } else {
-                            context->error_handler.semantical_exception("Only arrays of fixed size are supported", *member);
-                        }
-                    }
-                }
-
-                // Put small types first
-                std::sort(signature->members.begin(), signature->members.end(), [](const Member & lhs, const Member & rhs) {
-                    if (lhs.type == CHAR || lhs.type == BOOL) {
-                        return false;
-                    }
-
-                    return rhs.type == CHAR || rhs.type == BOOL;
-                });
-
-                // Create the type itself
-
-                if (structure->is_template_instantation()){
-                    std::vector<std::shared_ptr<const eddic::Type>> template_types;
-
-                    ast::TypeTransformer transformer(*context);
-
-                    for(auto& type : structure->inst_template_types){
-                        template_types.push_back(visit(transformer, type));
-                    }
-
-                    structure->struct_type = new_template_type(*context, structure->name, template_types);
-                } else {
-                    structure->struct_type = new_type(*context, structure->name, false);
-                }
-
-                // Annotate functions with the parent struct
-
-                for (auto & block : structure->blocks) {
-                    if (auto * function = boost::get<ast::TemplateFunctionDeclaration>(&block)) {
-                        if (!function->is_template()) {
-                            if (function->context) {
-                                function->context->struct_type = structure->struct_type;
-                            }
-                        }
-                    } else if (auto * function = boost::get<ast::Constructor>(&block)) {
-                        if (function->context) {
-                            function->context->struct_type = structure->struct_type;
-                        }
-                    } else if (auto * function = boost::get<ast::Destructor>(&block)) {
-                        if (function->context) {
-                            function->context->struct_type = structure->struct_type;
-                        }
-                    }
-                }
-
-                LOG<Trace>("Types") << "Structure \"" << structure->mangled_name << "\" is fully resolved (" << fully_resolved.size() << ")" << log::endl;
-
-                // Mark the structure as resolved
-                fully_resolved[structure->mangled_name] = structure->struct_type;
-                pending.erase(structure->mangled_name);
-
-                // We have made some progress
-                progress = true;
             }
+
+            if (!can_resolve) {
+                continue;
+            }
+
+            // At this point, the structure is entirely resolvable
+
+            auto signature = context->get_struct_safe(structure->mangled_name);
+
+            // Resolve the parent type if any
+            if (structure->parent_type) {
+                signature->parent_type = visit(ast::TypeTransformer(*context), *structure->parent_type);
+            }
+
+            // Resolve and collect all members
+            for (auto & block : structure->blocks) {
+                if (auto * member = boost::get<ast::MemberDeclaration>(&block)) {
+                    if (boost::smart_get<ast::PointerType>(&member->type)) {
+                        signature->members.emplace_back(member->name, POINTER);
+                    } else {
+                        signature->members.emplace_back(member->name, visit(ast::TypeTransformer(*context), member->type));
+                    }
+                } else if (auto * member = boost::get<ast::ArrayDeclaration>(&block)) {
+                    auto data_member_type = visit(ast::TypeTransformer(*context), member->arrayType);
+
+                    if (data_member_type->is_array()) {
+                        context->error_handler.semantical_exception("Multidimensional arrays are not permitted", *member);
+                    }
+
+                    if (auto * ptr = boost::get<ast::Integer>(&member->size)) {
+                        signature->members.emplace_back(member->arrayName, new_array_type(data_member_type, ptr->value));
+                    } else {
+                        context->error_handler.semantical_exception("Only arrays of fixed size are supported", *member);
+                    }
+                }
+            }
+
+            // Put small types first
+            std::sort(signature->members.begin(), signature->members.end(), [](const Member & lhs, const Member & rhs) {
+                if (lhs.type == CHAR || lhs.type == BOOL) {
+                    return false;
+                }
+
+                return rhs.type == CHAR || rhs.type == BOOL;
+            });
+
+            // Create the type itself
+
+            if (structure->is_template_instantation()){
+                std::vector<std::shared_ptr<const eddic::Type>> template_types;
+
+                ast::TypeTransformer transformer(*context);
+
+                for(auto& type : structure->inst_template_types){
+                    template_types.push_back(visit(transformer, type));
+                }
+
+                structure->struct_type = new_template_type(*context, structure->name, template_types);
+            } else {
+                structure->struct_type = new_type(*context, structure->name, false);
+            }
+
+            // Annotate functions with the parent struct
+
+            for (auto & block : structure->blocks) {
+                if (auto * function = boost::get<ast::TemplateFunctionDeclaration>(&block)) {
+                    if (!function->is_template()) {
+                        if (function->context) {
+                            function->context->struct_type = structure->struct_type;
+                        }
+                    }
+                } else if (auto * function = boost::get<ast::Constructor>(&block)) {
+                    if (function->context) {
+                        function->context->struct_type = structure->struct_type;
+                    }
+                } else if (auto * function = boost::get<ast::Destructor>(&block)) {
+                    if (function->context) {
+                        function->context->struct_type = structure->struct_type;
+                    }
+                }
+            }
+
+            LOG<Trace>("Types") << "Structure \"" << structure->mangled_name << "\" is fully resolved (" << fully_resolved.size() << ")" << log::endl;
+
+            // Mark the structure as resolved
+            fully_resolved[structure->mangled_name] = structure->struct_type;
+            pending.erase(structure);
+
+            // We have made some progress
+            progress = true;
         }
 
         // We exit if we have not made any progress or if there is nothing left to do
         if (!progress || pending.empty()) {
             break;
         }
+    }
+}
+
+void ast::TypeCollectionPass::apply_program(ast::SourceFile& program, bool indicator){
+    ContextAwarePass::apply_program(program, indicator);
+
+    if (!indicator) { // We only collect template declarations once
+        TemplateCollector template_collector(*template_engine);
+        template_collector(program);
     }
 }

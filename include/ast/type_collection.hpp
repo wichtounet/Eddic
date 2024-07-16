@@ -17,12 +17,12 @@
 namespace eddic::ast {
 
 struct TypeCollectionPass : ContextAwarePass {
-    void apply_program_post(ast::SourceFile& program, bool indicator) override;
+    void apply_program(ast::SourceFile& program, bool indicator) override;
     void apply_struct(ast::struct_definition & struct_, bool indicator) override;
 
 private:
     std::unordered_map<std::string, std::shared_ptr<const eddic::Type>> fully_resolved;
-    std::unordered_set<std::string> pending;
+    std::unordered_set<ast::struct_definition * > pending;
 };
 
 } // namespace eddic::ast
