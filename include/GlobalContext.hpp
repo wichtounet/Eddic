@@ -28,13 +28,16 @@ namespace eddic {
  * There is always only one instance of this class in the application. This symbol table is responsible
  * of storing all the global variables. It is also responsible for storing the global functions and structures.
  */
-struct GlobalContext final : public Context {
+struct GlobalContext final : Context {
     using FunctionMap = std::unordered_map<std::string, Function>;
     using StructMap   = std::unordered_map<std::string, std::shared_ptr<Struct>>;
 
     x3_grammar::global_error_handler error_handler;
 
     explicit GlobalContext(Platform platform);
+
+    GlobalContext(const GlobalContext & rhs) = delete;
+    GlobalContext& operator=(const GlobalContext & rhs) = delete;
 
     Variables getVariables();
 
@@ -51,6 +54,8 @@ struct GlobalContext final : public Context {
      * \return A reference to the newly created Function.
      */
     Function & add_function(std::shared_ptr<const Type> ret, const std::string & name, const std::string & mangled_name);
+
+    std::shared_ptr<FunctionContext> new_function_context(const std::shared_ptr<Configuration>& configuration);
 
     /*!
      * Returns the function with the given name.
@@ -125,6 +130,8 @@ private:
     statistics    m_statistics;
     timing_system m_timing;
     Platform      platform;
+
+    std::vector<std::shared_ptr<FunctionContext>> function_contexts; // TODO: We can probably avoid the shared_ptr
 
     std::vector<std::string> file_names;
     std::vector<std::string> file_contents;

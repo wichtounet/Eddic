@@ -26,7 +26,7 @@ namespace ast {
  * \brief The AST node for an else if construction.
  */
 struct ElseIf {
-    std::shared_ptr<Context> context; 
+    Context * context = nullptr; 
 
     Value condition;
     std::vector<Instruction> instructions;

@@ -26,7 +26,7 @@ namespace ast {
  * \brief The AST node for a do while loop.
  */
 struct DoWhile {
-    std::shared_ptr<Context> context;
+    Context * context = nullptr;
 
     Value condition;
     std::vector<Instruction> instructions;

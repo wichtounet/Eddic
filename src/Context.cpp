@@ -19,22 +19,21 @@
 
 using namespace eddic;
 
-Context::Context(std::shared_ptr<Context> parent) : m_parent(std::move(parent)) {}
-Context::Context(std::shared_ptr<Context> parent, std::shared_ptr<GlobalContext> global_context) : m_parent(std::move(parent)), global_context(std::move(global_context)) {}
+Context::Context(Context * parent, GlobalContext & global_context) : parent_(parent), global_context_(global_context) {}
 
-std::shared_ptr<Context> Context::parent() const  {
-    return m_parent;
+Context * Context::parent() const  {
+    return parent_;
 }
 
 bool Context::exists(const std::string& variable) const {
     bool found = variables.find(variable) != variables.end();
 
-    auto parent = m_parent;
+    auto parent = parent_;
 
     while(!found){
         if(parent){
             found = parent->variables.find(variable) != parent->variables.end();
-            parent = parent->m_parent;
+            parent = parent->parent_;
         } else {
             return false;
         }
@@ -57,12 +56,12 @@ std::shared_ptr<Variable> Context::getVariable(const std::string& variable) cons
     auto iter = variables.find(variable);
     auto end = variables.end();
 
-    auto parent = m_parent;
+    auto * parent = parent_;
 
     while(iter == end){
         iter = parent->variables.find(variable);
         end = parent->variables.end();
-        parent = parent->m_parent;
+        parent = parent->parent_;
     }
     
     return iter->second;
@@ -72,12 +71,12 @@ void Context::removeVariable(std::shared_ptr<Variable> variable){
     auto iter = variables.find(variable->name());
     auto end = variables.end();
 
-    auto parent = m_parent;
+    auto * parent = parent_;
     
     while(iter == end){
         iter = parent->variables.find(variable->name());
         end = parent->variables.end();
-        parent = parent->m_parent;
+        parent = parent->parent_;
     }
 
     variables.erase(iter);
@@ -91,10 +90,10 @@ Context::Variables::const_iterator Context::end() const {
     return variables.cend();
 }
 
-std::shared_ptr<GlobalContext> Context::global() const {
-    return global_context;
+GlobalContext & Context::global() const {
+    return global_context_;
 }
 
-std::shared_ptr<FunctionContext> Context::function(){
+FunctionContext * Context::function(){
     return nullptr;
 }

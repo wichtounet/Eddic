@@ -14,6 +14,8 @@
 
 namespace eddic {
 
+class Context;
+
 namespace ast {
 
 class ContextAnnotationPass : public Pass {
@@ -26,8 +28,8 @@ class ContextAnnotationPass : public Pass {
 
     private:
         std::shared_ptr<GlobalContext> globalContext;
-        std::shared_ptr<FunctionContext> functionContext;
-        std::shared_ptr<Context> currentContext;
+        FunctionContext * functionContext = nullptr;
+        Context * currentContext = nullptr;
 };
 
 } //end of ast

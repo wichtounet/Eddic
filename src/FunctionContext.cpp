@@ -5,11 +5,11 @@
 //  http://opensource.org/licenses/MIT)
 //=======================================================================
 
-#include "FunctionContext.hpp"
-
 #include <utility>
 
+#include "FunctionContext.hpp"
 #include "GlobalContext.hpp"
+#include "BlockContext.hpp"
 #include "Options.hpp"
 #include "Type.hpp"
 #include "Utils.hpp"
@@ -21,9 +21,8 @@
 
 using namespace eddic;
 
-FunctionContext::FunctionContext(std::shared_ptr<Context> parent, std::shared_ptr<GlobalContext> global_context,
-                                 Platform platform, const std::shared_ptr<Configuration>& configuration)
-    : Context(std::move(parent), std::move(global_context)), platform(platform) {
+FunctionContext::FunctionContext(Context * parent, GlobalContext & global_context, Platform platform, const std::shared_ptr<Configuration> & configuration) :
+        Context(parent, global_context), platform(platform) {
     //TODO Should not be done here
     if(configuration->option_defined("fomit-frame-pointer")){
         currentParameter = INT->size();
@@ -163,6 +162,10 @@ void FunctionContext::removeVariable(std::shared_ptr<Variable> variable){
     }
 }
 
-std::shared_ptr<FunctionContext> FunctionContext::function(){
-    return shared_from_this();
+FunctionContext * FunctionContext::function(){
+    return this;
+}
+
+std::shared_ptr<BlockContext> FunctionContext::new_block_context() {
+    return block_contexts.emplace_back(std::make_shared<BlockContext>(this, *this, global()));
 }

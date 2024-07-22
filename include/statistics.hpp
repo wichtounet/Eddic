@@ -15,11 +15,12 @@ namespace eddic {
 
 class statistics {
     public:
-        typedef std::unordered_map<std::string, std::size_t> Counters;
-        typedef Counters::const_iterator iterator;
+        using Counters = std::unordered_map<std::string, std::size_t>;
+        using iterator = Counters::const_iterator;
 
         void inc_counter(const std::string& a);
         std::size_t counter(const std::string& a) const;
+        std::size_t counter_safe(const std::string& a) const;
 
         iterator begin() const;
         iterator end() const;

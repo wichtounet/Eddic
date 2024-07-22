@@ -32,8 +32,8 @@ namespace mtac {
  */
 class basic_block {
     public:
-        typedef std::vector<mtac::Quadruple>::iterator iterator;
-        typedef std::vector<mtac::Quadruple>::reverse_iterator reverse_iterator;
+        using iterator         = std::vector<mtac::Quadruple>::iterator;
+        using reverse_iterator = std::vector<mtac::Quadruple>::reverse_iterator;
 
         /*!
          * Create a new basic block with the given index. 
@@ -126,7 +126,7 @@ class basic_block {
         const int index;    /*!< The index of the block */
         unsigned int depth = 0;
         std::string label;  /*!< The label of the block */
-        std::shared_ptr<FunctionContext> context = nullptr;     /*!< The context of the enclosing function. */
+        FunctionContext * context = nullptr;     /*!< The context of the enclosing function. */
 
         std::vector<mtac::Quadruple> statements;    /*!< The MTAC statements inside the basic block. */
         

@@ -26,7 +26,7 @@ namespace ast {
  * \brief The AST node for a for loop.
  */
 struct For {
-    std::shared_ptr<Context> context;
+    Context * context = nullptr;
 
     boost::optional<Instruction> start;
     boost::optional<Value> condition;

@@ -26,7 +26,7 @@ namespace ast {
  * \brief The AST node for a global array declaration.
  */
 struct GlobalArrayDeclaration : x3::file_position_tagged {
-    std::shared_ptr<Context> context;
+    Context * context = nullptr;
 
     Type arrayType;
     std::string arrayName;

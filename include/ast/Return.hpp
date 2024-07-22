@@ -27,7 +27,7 @@ namespace ast {
  */
 struct Return : x3::file_position_tagged {
     std::string mangled_name;
-    std::shared_ptr<FunctionContext> context;
+    FunctionContext * context = nullptr;
 
     Value value;
     x3::unused_type fake_;

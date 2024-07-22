@@ -36,11 +36,11 @@ std::shared_ptr<const Type> ast::GetTypeVisitor::operator()(const ast::Null& /*n
 }
 
 std::shared_ptr<const Type> ast::GetTypeVisitor::operator()(const ast::New& value) const {
-    return new_pointer_type(visit(ast::TypeTransformer(*value.context->global()), value.type));
+    return new_pointer_type(visit(ast::TypeTransformer(value.context->global()), value.type));
 }
 
 std::shared_ptr<const Type> ast::GetTypeVisitor::operator()(const ast::NewArray& value) const {
-    return new_array_type(visit(ast::TypeTransformer(*value.context->global()), value.type));
+    return new_array_type(visit(ast::TypeTransformer(value.context->global()), value.type));
 }
 
 std::shared_ptr<const Type> ast::GetTypeVisitor::operator()(const ast::Ternary& ternary) const {
@@ -51,7 +51,7 @@ std::shared_ptr<const Type> ast::GetTypeVisitor::operator()(const ast::Cast& cas
     if(cast.resolved_type){
         return cast.resolved_type;
     } else {
-        return visit(ast::TypeTransformer(*cast.context->global()), cast.type);
+        return visit(ast::TypeTransformer(cast.context->global()), cast.type);
     }
 }
 
@@ -75,9 +75,9 @@ std::shared_ptr<const Type> ast::GetTypeVisitor::operator()(const ast::Assignmen
     return visit(*this, assign.left_value);
 }
 
-std::shared_ptr<const eddic::Type> ast::operation_type(const std::shared_ptr<const eddic::Type> left, std::shared_ptr<Context> context, const ast::Operation& operation){
+std::shared_ptr<const eddic::Type> ast::operation_type(const std::shared_ptr<const eddic::Type> left, Context * context, const ast::Operation& operation){
     auto op = operation.get<0>();
-    auto global_context = context->global();
+    auto & global_context = context->global();
 
     if(op == ast::Operator::AND || op == ast::Operator::OR){
         return BOOL;
@@ -93,12 +93,12 @@ std::shared_ptr<const eddic::Type> ast::operation_type(const std::shared_ptr<con
         auto& operation_value = boost::smart_get<ast::FunctionCall>(operation.get<1>());
 
         if(!operation_value.mangled_name.empty()){
-            return global_context->getFunction(operation_value.mangled_name).return_type();
+            return global_context.getFunction(operation_value.mangled_name).return_type();
         }
 
         auto function_name = mangle(operation_value.function_name, operation_value.values, type);
 
-        return global_context->getFunction(function_name).return_type();
+        return global_context.getFunction(function_name).return_type();
     } else if(op == ast::Operator::BRACKET){
         if(left == STRING){
             return CHAR;
@@ -114,14 +114,14 @@ std::shared_ptr<const eddic::Type> ast::operation_type(const std::shared_ptr<con
 
         auto& member = boost::smart_get<Literal>(operation.get<1>()).value;
 
-        auto struct_type = global_context->get_struct(type->mangle());
+        auto struct_type = global_context.get_struct(type->mangle());
 
         do {
             if(struct_type->member_exists(member)){
                 return (*struct_type)[member].type;
             }
 
-            struct_type = global_context->get_struct(struct_type->parent_type);
+            struct_type = global_context.get_struct(struct_type->parent_type);
         } while(struct_type);
 
         cpp_unreachable("The member must exists");
@@ -142,7 +142,7 @@ std::shared_ptr<const Type> ast::GetTypeVisitor::operator()(const ast::Expressio
 }
 
 std::shared_ptr<const Type> ast::GetTypeVisitor::operator()(const ast::FunctionCall& call) const {
-    return call.context->global()->getFunction(call.mangled_name).return_type();
+    return call.context->global().getFunction(call.mangled_name).return_type();
 }
 
 std::shared_ptr<const Type> ast::GetTypeVisitor::operator()(const std::shared_ptr<Variable> value) const {

@@ -26,7 +26,7 @@ namespace ast {
  * \brief The AST node for a constructor declaration.
  */
 struct Constructor : x3::file_position_tagged {
-    std::shared_ptr<FunctionContext> context;
+    FunctionContext * context = nullptr;
 
     std::string mangledName;
     std::shared_ptr<const eddic::Type> struct_type = nullptr;

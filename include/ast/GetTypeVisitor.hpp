@@ -51,7 +51,7 @@ struct GetTypeVisitor : public boost::static_visitor<std::shared_ptr<const eddic
     }
 };
 
-std::shared_ptr<const eddic::Type> operation_type(std::shared_ptr<const eddic::Type> left, std::shared_ptr<Context> context, const ast::Operation& operation);
+std::shared_ptr<const eddic::Type> operation_type(std::shared_ptr<const eddic::Type> left, Context * context, const ast::Operation& operation);
 
 } //end of ast
 

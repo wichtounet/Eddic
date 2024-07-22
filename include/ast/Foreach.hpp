@@ -24,7 +24,7 @@ namespace ast {
  * \brief The AST node for a foreach loop.
  */
 struct Foreach : x3::file_position_tagged {
-    std::shared_ptr<Context> context;
+    Context * context = nullptr;
 
     ast::Type variableType;
     std::string variableName;

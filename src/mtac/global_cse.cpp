@@ -172,7 +172,7 @@ bool mtac::global_cse::optimize(mtac::Function& function, std::shared_ptr<mtac::
 
         for(auto& exp : Eval[i]){
             if(AEin.find(exp) != AEin.end()){
-                function.context->global()->stats().inc_counter("common_subexpr_eliminated");
+                function.context->global().stats().inc_counter("common_subexpr_eliminated");
 
                 changes = true;
 

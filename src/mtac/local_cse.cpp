@@ -8,6 +8,7 @@
 #include "FunctionContext.hpp"
 #include "GlobalContext.hpp"
 #include "Variable.hpp"
+#include "logging.hpp"
 
 #include "mtac/local_cse.hpp"
 #include "mtac/cse.hpp"
@@ -36,7 +37,7 @@ bool mtac::local_cse::operator()(mtac::Function& function){
                     if(are_equivalent(quadruple, exp)){
                         found = true;
                                 
-                        function.context->global()->stats().inc_counter("local_cse");
+                        function.context->global().stats().inc_counter("local_cse");
 
                         optimized = true;
                             

@@ -84,12 +84,12 @@ bool eddic::mtac::erase_result(mtac::Operator op){
         && !(op >= mtac::Operator::IF_UNARY && op <= mtac::Operator::IF_FALSE_FL);
 }
 
-unsigned int eddic::mtac::compute_member_offset(std::shared_ptr<const GlobalContext> context, std::shared_ptr<const Type> type, const std::string& member){
+unsigned int eddic::mtac::compute_member_offset(const GlobalContext& context, std::shared_ptr<const Type> type, const std::string& member){
     return compute_member(context, type, member).first;
 }
 
-std::pair<unsigned int, std::shared_ptr<const Type>> eddic::mtac::compute_member(std::shared_ptr<const GlobalContext> context, std::shared_ptr<const Type> type, const std::string& member){
-    auto struct_type = context->get_struct(type);
+std::pair<unsigned int, std::shared_ptr<const Type>> eddic::mtac::compute_member(const GlobalContext& context, std::shared_ptr<const Type> type, const std::string& member){
+    auto struct_type = context.get_struct(type);
     std::shared_ptr<const Type> member_type;
     unsigned int offset = 0;
 
@@ -99,14 +99,14 @@ std::pair<unsigned int, std::shared_ptr<const Type>> eddic::mtac::compute_member
             break;
         }
 
-        offset += context->self_size_of_struct(struct_type);
+        offset += context.self_size_of_struct(struct_type);
 
-        struct_type = context->get_struct(struct_type->parent_type);
+        struct_type = context.get_struct(struct_type->parent_type);
     } while(struct_type);
 
     cpp_assert(member_type, "The member must exist");
 
-    offset += context->member_offset(struct_type, member);
+    offset += context.member_offset(struct_type, member);
 
     return std::make_pair(offset, member_type);
 }

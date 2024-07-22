@@ -25,7 +25,7 @@ namespace ast {
  * \brief The AST node for an assignement to a variable.
  */
 struct Assignment : x3::file_position_tagged {
-    std::shared_ptr<Context> context;
+    Context * context = nullptr;
 
     Value left_value;
     Value value;

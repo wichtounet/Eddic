@@ -40,7 +40,7 @@ void peel(mtac::loop& loop, mtac::Function& function, mtac::Program& program){
     auto iterations = loop.estimate();
 
     LOG<Trace>("loops") << "Completely peel " << loop << " with "  << iterations << " iterations" << log::endl;
-    function.context->global()->stats().inc_counter("loop_peeled");
+    function.context->global().stats().inc_counter("loop_peeled");
 
     //The comparison is not necessary anymore
     auto exit = loop.find_exit();

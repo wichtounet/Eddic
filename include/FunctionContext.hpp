@@ -21,58 +21,59 @@ class Type;
 struct GlobalContext;
 class Variable;
 
-typedef std::vector<std::shared_ptr<Variable>> Storage;
-typedef boost::variant<int, std::shared_ptr<Variable>> Offset;
+using Storage = std::vector<std::shared_ptr<Variable>>;
+using Offset  = boost::variant<int, std::shared_ptr<Variable>>;
 
 /*!
  * \class FunctionContext
  * \brief A symbol table for a function.
  */
-class FunctionContext final : public Context, public std::enable_shared_from_this<FunctionContext> {
-    private:
-     int currentPosition{};
-     int currentParameter;
-     int temporary = 1;
-     int generated = 0;
-     Platform platform;
+struct FunctionContext final : Context {
+    FunctionContext(Context * parent, GlobalContext & global_context, Platform platform, const std::shared_ptr<Configuration> & configuration);
 
-     // Refer all variables that are stored, including temporary
-     Storage storage;
+    int size() const;
 
-    public:
-     FunctionContext(std::shared_ptr<Context> parent, std::shared_ptr<GlobalContext> global_context, Platform platform,
-                     const std::shared_ptr<Configuration>& configuration);
+    int  stack_position() const;
+    void set_stack_position(int current);
 
-     int size() const;
+    std::shared_ptr<Variable> addVariable(const std::string & a, std::shared_ptr<const Type> type) override;
+    std::shared_ptr<Variable> addVariable(const std::string & a, std::shared_ptr<const Type> type, ast::Value & value) override;
 
-     int stack_position() const;
-     void set_stack_position(int current);
+    std::shared_ptr<Variable> addParameter(const std::string & a, const std::shared_ptr<const Type> & type);
 
-     std::shared_ptr<Variable> addVariable(const std::string& a, std::shared_ptr<const Type> type) override;
-     std::shared_ptr<Variable> addVariable(const std::string& a, std::shared_ptr<const Type> type, ast::Value& value) override;
+    std::shared_ptr<Variable> newVariable(const std::string & a, const std::shared_ptr<const Type> & type);
+    std::shared_ptr<Variable> newVariable(const std::shared_ptr<Variable> & source);
+    std::shared_ptr<Variable> newParameter(const std::string & a, const std::shared_ptr<const Type> & type);
 
-     std::shared_ptr<Variable> addParameter(const std::string& a, const std::shared_ptr<const Type> & type);
+    std::shared_ptr<Variable> generate_variable(const std::string & prefix, std::shared_ptr<const Type> type) override;
 
-     std::shared_ptr<Variable> newVariable(const std::string& a, const std::shared_ptr<const Type>& type);
-     std::shared_ptr<Variable> newVariable(const std::shared_ptr<Variable>& source);
-     std::shared_ptr<Variable> newParameter(const std::string& a, const std::shared_ptr<const Type>& type);
+    std::shared_ptr<Variable> new_temporary(std::shared_ptr<const Type> type) override;
 
-     std::shared_ptr<Variable> generate_variable(const std::string& prefix, std::shared_ptr<const Type> type) override;
+    std::shared_ptr<Variable> new_reference(const std::shared_ptr<const Type> & type, const std::shared_ptr<Variable> & var, const Offset & offset);
 
-     std::shared_ptr<Variable> new_temporary(std::shared_ptr<const Type> type) override;
+    void removeVariable(std::shared_ptr<Variable> variable) override;
 
-     std::shared_ptr<Variable> new_reference(const std::shared_ptr<const Type>& type,
-                                             const std::shared_ptr<Variable>& var, const Offset& offset);
+    void allocate_in_param_register(const std::shared_ptr<Variable> & variable, unsigned int register_);
 
-     void removeVariable(std::shared_ptr<Variable> variable) override;
+    Storage stored_variables();
 
-     void allocate_in_param_register(const std::shared_ptr<Variable>& variable, unsigned int register_);
+    std::shared_ptr<const Type> struct_type = nullptr;
 
-     Storage stored_variables();
+    FunctionContext * function() override;
 
-     std::shared_ptr<const Type> struct_type = nullptr;
+    std::shared_ptr<BlockContext> new_block_context() override;
 
-     std::shared_ptr<FunctionContext> function();
+private:
+    int      currentPosition{};
+    int      currentParameter;
+    int      temporary = 1;
+    int      generated = 0;
+    Platform platform;
+
+    // Refer all variables that are stored, including temporary
+    Storage storage;
+
+    std::vector<std::shared_ptr<BlockContext>> block_contexts; // TODO: We can probably avoid the shared_ptr
 };
 
 } //end of eddic

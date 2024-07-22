@@ -23,7 +23,7 @@ namespace ast {
  * \brief The AST node for a variable value.
  */
 struct VariableValue : x3::file_position_tagged {
-    std::shared_ptr<Context> context;
+    Context * context = nullptr;
     std::shared_ptr<Variable> var;
 
     std::string variableName;

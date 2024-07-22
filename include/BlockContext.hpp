@@ -19,23 +19,26 @@ struct GlobalContext;
  * \class BlockContext
  * \brief A symbol table for the block level. 
  */
-class BlockContext final : public Context {
-    private:
-        std::shared_ptr<FunctionContext> m_functionContext;
+struct BlockContext final : Context {
+    BlockContext(Context * parent, FunctionContext & function_context, GlobalContext & global_context);
 
-    public:
-        BlockContext(std::shared_ptr<Context> parent, std::shared_ptr<FunctionContext> functionContext, std::shared_ptr<GlobalContext> global_context);
-        
-        std::shared_ptr<Variable> addVariable(const std::string& a, std::shared_ptr<const Type> type);
-        std::shared_ptr<Variable> addVariable(const std::string& a, std::shared_ptr<const Type> type, ast::Value& value);
-        
-        std::shared_ptr<Variable> generate_variable(const std::string& prefix, std::shared_ptr<const Type> type) override;
+    std::shared_ptr<Variable> addVariable(const std::string & a, std::shared_ptr<const Type> type);
+    std::shared_ptr<Variable> addVariable(const std::string & a, std::shared_ptr<const Type> type, ast::Value & value);
 
-        std::shared_ptr<Variable> new_temporary(std::shared_ptr<const Type> type);
-        
-        std::shared_ptr<FunctionContext> function();
+    std::shared_ptr<Variable> generate_variable(const std::string & prefix, std::shared_ptr<const Type> type) override;
+
+    std::shared_ptr<Variable> new_temporary(std::shared_ptr<const Type> type);
+
+    FunctionContext * function() override;
+
+    std::shared_ptr<BlockContext> new_block_context();
+
+private:
+    FunctionContext & function_context_;
+
+    std::vector<std::shared_ptr<BlockContext>> block_contexts; // TODO: We can probably avoid the shared_ptr
 };
 
-} //end of eddic
+} // namespace eddic
 
 #endif

@@ -102,9 +102,11 @@ void ltac::alloc_stack_space(mtac::Program& program){
             }
         }
 
+        auto function_context = function.context;
+
         //Set the sizes of arrays
 
-        for(const auto& var_pair : *function.context){
+        for(const auto& var_pair : *function_context){
             const auto& var = var_pair.second;
 
             if(var->position().isStack()){
@@ -115,19 +117,19 @@ void ltac::alloc_stack_space(mtac::Program& program){
                     bb->emplace_back_low(ltac::Operator::MOV, ltac::Address(ltac::BP, position), static_cast<int>(type->elements()));
                 } else if(type->is_custom_type()){
                     //Set lengths of arrays inside structures
-                    auto struct_type = function.context->global()->get_struct(type);
+                    auto struct_type = function_context->global().get_struct(type);
                     auto offset = 0;
 
                     while(struct_type){
                         for(auto& member : struct_type->members){
                             if(member.type->is_array() && !member.type->is_dynamic_array()){
                                 bb->emplace_back_low(ltac::Operator::MOV, 
-                                        ltac::Address(ltac::BP, position + offset + function.context->global()->member_offset(struct_type, member.name)),
+                                        ltac::Address(ltac::BP, position + offset + function_context->global().member_offset(struct_type, member.name)),
                                         static_cast<int>(member.type->elements()));
                             }
                         }
 
-                        struct_type = function.context->global()->get_struct(struct_type->parent_type);
+                        struct_type = function_context->global().get_struct(struct_type->parent_type);
                     }
                 }
             }

@@ -128,8 +128,8 @@ bool mtac::dead_code_elimination::operator()(mtac::Function& function){
                     if(!quadruple.result->type()->is_pointer() && !quadruple.result->type()->is_array()){
                         if(auto* offset_ptr = boost::get<int>(&*quadruple.arg1)){
                             if(quadruple.result->type()->is_custom_type() || quadruple.result->type()->is_template_type()){
-                                auto struct_type = function.context->global()->get_struct(quadruple.result->type()->mangle());
-                                auto member_type = function.context->global()->member_type(struct_type, *offset_ptr);
+                                auto struct_type = function.context->global().get_struct(quadruple.result->type()->mangle());
+                                auto member_type = function.context->global().member_type(struct_type, *offset_ptr);
 
                                 if(member_type->is_pointer()){
                                     continue;

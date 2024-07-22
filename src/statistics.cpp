@@ -17,6 +17,14 @@ std::size_t statistics::counter(const std::string& a) const {
     return counters.at(a);
 }
 
+std::size_t statistics::counter_safe(const std::string& a) const {
+    if (counters.contains(a)) {
+        return counters.at(a);
+    }
+
+    return 0;
+}
+
 statistics::iterator statistics::begin() const {
     return counters.cbegin();
 }

@@ -28,7 +28,7 @@ namespace ast {
  * \brief The AST node for a switch case.
  */
 struct Switch : x3::file_position_tagged {
-    std::shared_ptr<Context> context;
+    Context * context = nullptr;
 
     Value value;
     std::vector<SwitchCase> cases;

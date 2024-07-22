@@ -35,7 +35,7 @@ typedef std::vector<Operation> Operations;
  * An expression can be a mathematical expression or a postfix expression (member function calls, array values or member values).
  */
 struct Expression : x3::file_position_tagged {
-    std::shared_ptr<Context> context;
+    Context * context = nullptr;
 
     Value first;
     Operations operations;

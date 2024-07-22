@@ -55,8 +55,10 @@ BOOST_AUTO_TEST_CASE( samples_##file ){\
     assert_compiles("eddi_samples/" #file ".eddi", "--64", "--O3", #file ".6.out");\
 }
 
+namespace {
+
 inline void remove(const std::string& file){
-    remove(file.c_str());
+    ::remove(file.c_str());
 }
 
 inline std::shared_ptr<eddic::Configuration> parse_options(const std::string& source_file, const std::string& output_file, std::vector<std::string> params){
@@ -87,7 +89,7 @@ inline std::shared_ptr<eddic::Configuration> parse_options(const std::string& so
     delete[] argv;
 
     // If necessary for debugging
-    // eddic::configure_logging(4);
+    //eddic::configure_logging(3);
 
     return configuration;
 }
@@ -177,6 +179,8 @@ void validate(const std::string& file, T... arguments){
     validate_output(file, "--64", "--O1", file + ".5.out", arguments...);
     validate_output(file, "--64", "--O3", file + ".6.out", arguments...);
 }
+
+} // namespace
 
 #define assert_output_equals(file, output, param1, param2, param3) \
 {\
@@ -622,18 +626,17 @@ BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE(OptimizationSuite)
 
-eddic::statistics& compute_stats_mtac(const std::string& file){
+void validate_stats_mtac(const std::string& file, const std::string & name, size_t value){
     auto configuration = parse_options("test/cases/" + file, "test/cases/" + file + ".out", {"--64", "--O3"});
 
     eddic::Compiler compiler;
     eddic::EDDIFrontEnd front_end;
     auto program = compiler.compile_mtac("test/cases/" + file, eddic::Platform::INTEL_X86_64, configuration, front_end);
 
-    auto global_context = program->context;
-    return global_context->stats();
+    BOOST_TEST(program->context->stats().counter_safe(name) == value);
 }
 
-eddic::statistics& compute_stats_ltac(const std::string& file){
+void compute_stats_ltac(const std::string& file, const std::string & name, size_t value){
     auto configuration = parse_options("test/cases/" + file, "test/cases/" + file + ".out", {"--64", "--O3"});
 
     eddic::Compiler compiler;
@@ -643,85 +646,59 @@ eddic::statistics& compute_stats_ltac(const std::string& file){
 
     remove("test/cases/" + file + ".out");
 
-    return program->context->stats();
+    BOOST_TEST(program->context->stats().counter_safe(name) == value);
 }
 
 BOOST_AUTO_TEST_CASE( parameter_propagation ){
-    auto& stats = compute_stats_mtac("parameter_propagation.eddi");
-
-    BOOST_REQUIRE_EQUAL(stats.counter("propagated_parameter"), 5);
+    validate_stats_mtac("parameter_propagation.eddi", "propagated_parameter", 5);
 }
 
 BOOST_AUTO_TEST_CASE( global_cp ){
-    auto& stats = compute_stats_mtac("global_cp.eddi");
-
-    BOOST_REQUIRE_EQUAL(stats.counter("constant_propagation_true"), 1);
+    validate_stats_mtac("global_cp.eddi", "constant_propagation_true", 1);
 }
 
 BOOST_AUTO_TEST_CASE( global_offset_cp ){
-    auto& stats = compute_stats_mtac("global_offset_cp.eddi");
-
-    BOOST_REQUIRE_EQUAL(stats.counter("offset_constant_propagation_true"), 1);
+    validate_stats_mtac("global_offset_cp.eddi", "offset_constant_propagation_true", 1);
 }
 
 BOOST_AUTO_TEST_CASE( remove_empty_functions ){
-    auto& stats = compute_stats_mtac("remove_empty_functions.eddi");
-
-    BOOST_REQUIRE_EQUAL(stats.counter("empty_function_removed"), 1);
+    validate_stats_mtac("remove_empty_functions.eddi", "empty_function_removed", 1);
 }
 
 BOOST_AUTO_TEST_CASE( remove_empty_loops ){
-    auto& stats = compute_stats_mtac("remove_empty_loops.eddi");
-
-    BOOST_REQUIRE_EQUAL(stats.counter("empty_loop_removed"), 1);
+    validate_stats_mtac("remove_empty_loops.eddi", "empty_loop_removed", 1);
 }
 
 BOOST_AUTO_TEST_CASE( invariant_code_motion ){
-    auto& stats = compute_stats_mtac("invariant_code_motion.eddi");
-
-    BOOST_REQUIRE_EQUAL(stats.counter("invariant_moved"), 3);
+    validate_stats_mtac("invariant_code_motion.eddi", "invariant_moved", 3);
 }
 
 BOOST_AUTO_TEST_CASE( complete_loop_peeling ){
-    auto& stats = compute_stats_mtac("complete_loop_peeling.eddi");
-
-    BOOST_REQUIRE_EQUAL(stats.counter("loop_peeled"), 1);
+    validate_stats_mtac("complete_loop_peeling.eddi", "loop_peeled", 1);
 }
 
 BOOST_AUTO_TEST_CASE( complete_loop_peeling_2 ){
-    auto& stats = compute_stats_mtac("complete_loop_peeling_2.eddi");
-
-    BOOST_REQUIRE_EQUAL(stats.counter("loop_peeled"), 1);
+    validate_stats_mtac("complete_loop_peeling_2.eddi", "loop_peeled", 1);
 }
 
 BOOST_AUTO_TEST_CASE( loop_unrolling ){
-    auto& stats = compute_stats_mtac("loop_unrolling.eddi");
-
-    BOOST_REQUIRE_EQUAL(stats.counter("loop_unrolled"), 1);
+    validate_stats_mtac("loop_unrolling.eddi", "loop_unrolled", 1);
 }
 
 BOOST_AUTO_TEST_CASE( loop_unswitching ){
-    auto& stats = compute_stats_mtac("loop_unswitching.eddi");
-
-    BOOST_REQUIRE_EQUAL(stats.counter("loop_unswitched"), 1);
+    validate_stats_mtac("loop_unswitching.eddi", "loop_unswitched", 1);
 }
 
 BOOST_AUTO_TEST_CASE( global_cse ){
-    auto& stats = compute_stats_mtac("common_subexpr_elim.eddi");
-
-    BOOST_REQUIRE_EQUAL(stats.counter("common_subexpr_eliminated"), 3);
+    validate_stats_mtac("common_subexpr_elim.eddi", "common_subexpr_eliminated", 3);
 }
 
 BOOST_AUTO_TEST_CASE( local_cse ){
-    auto& stats = compute_stats_mtac("local_cse.eddi");
-
-    BOOST_REQUIRE_EQUAL(stats.counter("local_cse"), 4);
+     validate_stats_mtac("local_cse.eddi", "local_cse", 4);
 }
 
 BOOST_AUTO_TEST_CASE( cmov_opt ){
-    auto& stats = compute_stats_ltac("cmov_opt.eddi");
-
-    BOOST_REQUIRE_EQUAL(stats.counter("cmov_opt"), 1);
+    compute_stats_ltac("cmov_opt.eddi", "cmov_opt", 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

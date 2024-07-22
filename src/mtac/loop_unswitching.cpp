@@ -112,7 +112,7 @@ bool mtac::loop_unswitching::operator()(mtac::Function& function){
                             mtac::make_edge(exit_copy, new_goto_bb);
                     
                             LOG<Trace>("loops") << "Unswitch loop" << log::endl;
-                            function.context->global()->stats().inc_counter("loop_unswitched");
+                            function.context->global().stats().inc_counter("loop_unswitched");
 
                             optimized = true;
                         }

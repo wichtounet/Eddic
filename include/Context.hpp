@@ -22,6 +22,7 @@ class Variable;
 class IntermediateProgram;
 struct GlobalContext;
 class FunctionContext;
+class BlockContext;
 
 /*!
  * \class Context
@@ -33,11 +34,11 @@ class FunctionContext;
  */
 class Context {
     private:
-        std::shared_ptr<Context> m_parent;
-        std::shared_ptr<GlobalContext> global_context;
+        Context * parent_;
+        GlobalContext & global_context_;
 
     protected:
-        typedef std::unordered_map<std::string, std::shared_ptr<Variable>> Variables;
+        using Variables = std::unordered_map<std::string, std::shared_ptr<Variable>>;
 
         Variables variables;
 
@@ -46,11 +47,14 @@ class Context {
          * Construct a new Context. 
          * \param parent The parent Context of this new Context. 
          */
-        explicit Context(std::shared_ptr<Context> parent);
-        explicit Context(std::shared_ptr<Context> parent, std::shared_ptr<GlobalContext> global_context);
-        
+        Context(Context * parent, GlobalContext & global_context);
+
         Context(const Context& rhs) = delete;
         Context& operator=(const Context& rhs) = delete;
+
+        virtual std::shared_ptr<BlockContext> new_block_context() {
+            cpp_unreachable("Only BlockContext and FunctionContext can create new contexts");
+        }
 
         /*!
          * Add a new variable to this context. 
@@ -128,10 +132,10 @@ class Context {
          * Returns the parent of this context. 
          * \return A pointer to the parent context. If the context is global, this methods returns nullptr. 
          */
-        std::shared_ptr<Context> parent() const;
+        Context* parent() const;
         
-        virtual std::shared_ptr<FunctionContext> function();
-        std::shared_ptr<GlobalContext> global() const;
+        virtual FunctionContext * function();
+        GlobalContext& global() const;
 };
 
 } //end of eddic

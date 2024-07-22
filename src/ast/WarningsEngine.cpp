@@ -117,7 +117,7 @@ struct Inspector : public boost::static_visitor<> {
         AUTO_RECURSE_SWITCH()
         AUTO_RECURSE_COMPOSED_VALUES()
 
-        void check(std::shared_ptr<Context> context){
+        void check(Context * context){
             if(configuration->option_defined("warning-unused")){
                 auto iter = context->begin();
                 auto end = context->end();
@@ -127,11 +127,11 @@ struct Inspector : public boost::static_visitor<> {
 
                     if(var->references() == 0){
                         if(var->position().isStack()){
-                            warn(context->global()->error_handler.to_string(collector.getPosition(var)), "unused variable '" + var->name() + "'");
+                            warn(context->global().error_handler.to_string(collector.getPosition(var)), "unused variable '" + var->name() + "'");
                         } else if(var->position().isGlobal()){
-                            warn(context->global()->error_handler.to_string(collector.getPosition(var)), "unused global variable '" + var->name() + "'");
+                            warn(context->global().error_handler.to_string(collector.getPosition(var)), "unused global variable '" + var->name() + "'");
                         } else if(var->position().isParameter()){
-                            warn(context->global()->error_handler.to_string(collector.getPosition(var)), "unused parameter '" + var->name() + "'");
+                            warn(context->global().error_handler.to_string(collector.getPosition(var)), "unused parameter '" + var->name() + "'");
                         }
                     }
                 }
@@ -139,7 +139,7 @@ struct Inspector : public boost::static_visitor<> {
         }
 
         void operator()(ast::SourceFile& program){
-            check(program.context);
+            check(program.context.get());
 
             visit_each(*this, program);
         }

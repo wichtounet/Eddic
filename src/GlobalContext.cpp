@@ -8,6 +8,7 @@
 #include "cpp_utils/assert.hpp"
 
 #include "GlobalContext.hpp"
+#include "FunctionContext.hpp"
 #include "Variable.hpp"
 #include "Utils.hpp"
 #include "VisitorUtils.hpp"
@@ -18,7 +19,7 @@
 
 using namespace eddic;
         
-GlobalContext::GlobalContext(Platform platform) : Context(nullptr), platform(platform) {
+GlobalContext::GlobalContext(Platform platform) : Context(nullptr, *this), platform(platform) {
     Val zero = 0;
 
     variables["_mem_start"] = std::make_shared<Variable>("_mem_start", INT, Position(PositionType::GLOBAL, "_mem_start"), zero);
@@ -64,6 +65,11 @@ Function& GlobalContext::add_function(std::shared_ptr<const Type> ret, const std
     m_functions.emplace(std::piecewise_construct, std::forward_as_tuple(mangled_name), std::forward_as_tuple(ret, name, mangled_name));
 
     return m_functions.at(mangled_name);
+}
+
+
+std::shared_ptr<FunctionContext> GlobalContext::new_function_context(const std::shared_ptr<Configuration>& configuration) {
+    return function_contexts.emplace_back(std::make_shared<FunctionContext>(this, *this, platform, configuration));
 }
 
 Function& GlobalContext::getFunction(const std::string& function){

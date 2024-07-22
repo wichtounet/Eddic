@@ -25,7 +25,7 @@ namespace ast {
  * \brief The AST node for an else construction.
  */
 struct Else {
-    std::shared_ptr<Context> context;
+    Context * context = nullptr;
     std::vector<Instruction> instructions;
     x3::unused_type fake_;
 };

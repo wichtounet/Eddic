@@ -49,7 +49,7 @@ void ast::FunctionCollectionPass::apply_function(ast::TemplateFunctionDeclaratio
     LOG<Info>("Functions") << "Register function " << mangled_name << log::endl;
 
     signature.struct_type() = declaration.struct_type;
-    signature.context() = declaration.context;
+    signature.set_context(declaration.context);
     signature.parameters() = std::move(parameters);
 
     declaration.mangledName = mangled_name;
@@ -81,7 +81,7 @@ void ast::FunctionCollectionPass::apply_struct_constructor(ast::Constructor& con
     auto& signature = context->add_function(VOID, "ctor", mangled_name);
 
     signature.struct_type() = constructor.struct_type;
-    signature.context() = constructor.context;
+    signature.set_context(constructor.context);
     signature.parameters() = std::move(parameters);
 
     constructor.mangledName = mangled_name;
@@ -105,7 +105,7 @@ void ast::FunctionCollectionPass::apply_struct_destructor(ast::Destructor& destr
     auto& signature = context->add_function(VOID, "dtor", mangled_name);
 
     signature.struct_type() = destructor.struct_type;
-    signature.context() = destructor.context;
+    signature.set_context(destructor.context);
     signature.parameters() = std::move(parameters);
 
     destructor.mangledName = mangled_name;

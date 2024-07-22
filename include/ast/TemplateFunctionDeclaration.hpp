@@ -25,7 +25,7 @@ namespace ast {
  * \brief The AST node for a template function declaration.
  */
 struct TemplateFunctionDeclaration : x3::file_position_tagged {
-    std::shared_ptr<FunctionContext> context;
+    FunctionContext * context = nullptr;
 
     std::string mangledName;
     std::string struct_name;

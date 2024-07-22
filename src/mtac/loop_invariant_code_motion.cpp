@@ -126,7 +126,7 @@ bool loop_invariant_code_motion(mtac::loop& loop, mtac::Function& function){
                         pre_header = loop.find_safe_preheader(function, true);
                     }
 
-                    function.context->global()->stats().inc_counter("invariant_moved");
+                    function.context->global().stats().inc_counter("invariant_moved");
 
                     pre_header->statements.push_back(statement);
                     mtac::transform_to_nop(statement);

@@ -100,7 +100,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
             }
         }
 
-        ast::VariableValue this_variable(std::shared_ptr<Context> context, x3::file_position_tagged position){
+        ast::VariableValue this_variable(Context * context, x3::file_position_tagged position){
             ast::VariableValue variable_value;
 
             variable_value.context = context;
@@ -183,10 +183,10 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
                 auto& variable = *ptr;
                 if (!variable.context->exists(variable.variableName)) {
                     auto context = variable.context->function();
-                    auto global_context = variable.context->global();
+                    auto & global_context = variable.context->global();
 
-                    if(context && context->struct_type && global_context->struct_exists(context->struct_type->mangle())){
-                        auto struct_type = global_context->get_struct(context->struct_type);
+                    if(context && context->struct_type && global_context.struct_exists(context->struct_type->mangle())){
+                        auto struct_type = global_context.get_struct(context->struct_type);
 
                         do {
                             if(struct_type->member_exists(variable.variableName)){
@@ -203,7 +203,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
                                 return;
                             }
 
-                            struct_type = global_context->get_struct(struct_type->parent_type);
+                            struct_type = global_context.get_struct(struct_type->parent_type);
                         } while(struct_type);
                     }
 
@@ -435,7 +435,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
         void operator()(ast::Expression& value){
             check_value(value.first);
 
-            auto context = value.context->global();
+            auto & context = value.context->global();
 
             auto type = visit(ast::GetTypeVisitor(), value.first);
             for(auto& op : value.operations){
@@ -453,7 +453,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
                 template_engine->check_member_function(type, op, value);
 
                 if(op.get<0>() == ast::Operator::DOT){
-                    auto struct_type = value.context->global()->get_struct(type);
+                    auto struct_type = context.get_struct(type);
                     auto orig = struct_type;
 
                     //We delay it
@@ -473,7 +473,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
                             break;
                         }
 
-                        struct_type = value.context->global()->get_struct(struct_type->parent_type);
+                        struct_type = context.get_struct(struct_type->parent_type);
                     } while(struct_type);
 
                     if(!found){
@@ -503,7 +503,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
                     do {
                         mangled = mangle(name, types, struct_type);
 
-                        if(context->exists(mangled)){
+                        if(context.exists(mangled)){
                             call_value.mangled_name = mangled;
 
                             if(parent){
@@ -514,7 +514,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
                             break;
                         }
 
-                        struct_type = context->get_struct(struct_type)->parent_type;
+                        struct_type = context.get_struct(struct_type)->parent_type;
                         parent = true;
                     } while(struct_type);
 
@@ -539,7 +539,7 @@ class FunctionCheckerVisitor : public boost::static_visitor<> {
             check_value(delete_.value);
         }
 
-        bool check_variable(std::shared_ptr<Context> context, const std::string& name, const x3::file_position_tagged& position){
+        bool check_variable(Context * context, const std::string& name, const x3::file_position_tagged& position){
             if(context->exists(name)){
                 auto var = context->getVariable(name);
 

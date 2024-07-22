@@ -80,11 +80,11 @@ std::vector<std::shared_ptr<const Type>> to_types(std::vector<ast::Value>& value
 void construct(mtac::Function& function, std::shared_ptr<const Type> type, std::vector<ast::Value> values,
                const mtac::Argument& this_arg) {
     auto ctor_name = mangle_ctor(to_types(values), std::move(type));
-    auto global_context = function.context->global();
+    auto & global_context = function.context->global();
 
     //Get the constructor
-    cpp_assert(global_context->exists(ctor_name), "The constructor must exists");
-    auto& ctor_function = global_context->getFunction(ctor_name);
+    cpp_assert(global_context.exists(ctor_name), "The constructor must exists");
+    auto& ctor_function = global_context.getFunction(ctor_name);
 
     //Pass all normal arguments
     pass_arguments(function, ctor_function, values);
@@ -101,11 +101,11 @@ void copy_construct(mtac::Function& function, const std::shared_ptr<const Type>&
     const std::vector<std::shared_ptr<const Type>> ctor_types = {new_pointer_type(type)};
     auto ctor_name = mangle_ctor(ctor_types, type);
 
-    auto global_context = function.context->global();
+    auto & global_context = function.context->global();
 
-    cpp_assert(global_context->exists(ctor_name), "The copy constructor must exists. Something went wrong in default generation");
+    cpp_assert(global_context.exists(ctor_name), "The copy constructor must exists. Something went wrong in default generation");
 
-    auto& ctor_function = global_context->getFunction(ctor_name);
+    auto& ctor_function = global_context.getFunction(ctor_name);
 
     //The values to be passed to the copy constructor
     std::vector<ast::Value> values;
@@ -120,12 +120,12 @@ void copy_construct(mtac::Function& function, const std::shared_ptr<const Type>&
 }
 
 void destruct(mtac::Function& function, std::shared_ptr<const Type> type, const mtac::Argument& this_arg) {
-    auto global_context = function.context->global();
+    auto & global_context = function.context->global();
     auto dtor_name = mangle_dtor(std::move(type));
 
-    cpp_assert(global_context->exists(dtor_name), "The destructor must exists");
+    cpp_assert(global_context.exists(dtor_name), "The destructor must exists");
 
-    auto& dtor_function = global_context->getFunction(dtor_name);
+    auto& dtor_function = global_context.getFunction(dtor_name);
 
     //Pass "this" parameter
     function.emplace_back(mtac::Operator::PPARAM, this_arg, dtor_function.context()->getVariable(dtor_function.parameter(0).name()), dtor_function);
@@ -207,7 +207,7 @@ arguments get_member(mtac::Function& function, unsigned int offset, std::shared_
                 } else if (data_type->is_custom_type()) {
                     auto base_var = function.context->new_reference(member_type, var, offset);
 
-                    auto struct_type = function.context->global()->get_struct(data_type);
+                    auto struct_type = function.context->global().get_struct(data_type);
 
                     for (auto& member : struct_type->members) {
                         auto [offset, member_type] = mtac::compute_member(function.context->global(), base_var->type(), member.name);
@@ -272,7 +272,7 @@ arguments struct_to_arguments(mtac::Function& function, const std::shared_ptr<co
                               const std::shared_ptr<Variable>& base_var, unsigned int offset) {
     arguments result;
 
-    auto struct_type = function.context->global()->get_struct(type);
+    auto struct_type = function.context->global().get_struct(type);
 
     for(auto& member : struct_type->members){
         auto [member_offset, member_type] = mtac::compute_member(function.context->global(), type, member.name);
@@ -492,9 +492,9 @@ arguments compute_expression_operation(mtac::Function& function, std::shared_ptr
 
         case ast::Operator::CALL:
             {
-                auto global_context = function.context->global();
+                auto & global_context = function.context->global();
                 auto call_operation_value = boost::smart_get<ast::FunctionCall>(operation_value);
-                auto& definition = global_context->getFunction(call_operation_value.mangled_name);
+                auto& definition = global_context.getFunction(call_operation_value.mangled_name);
 
                 auto left_value = left[0];
 
@@ -502,21 +502,21 @@ arguments compute_expression_operation(mtac::Function& function, std::shared_ptr
                     auto dest_type = call_operation_value.left_type;
                     dest_type = dest_type->is_pointer() ? dest_type->data_type() : dest_type;
 
-                    auto src_struct_type = global_context->get_struct(type);
-                    auto dest_struct_type = global_context->get_struct(dest_type);
+                    auto src_struct_type = global_context.get_struct(type);
+                    auto dest_struct_type = global_context.get_struct(dest_type);
 
                     auto parent = src_struct_type->parent_type;
-                    int offset = global_context->self_size_of_struct(src_struct_type);
+                    int offset = global_context.self_size_of_struct(src_struct_type);
 
                     while(parent){
                         if(parent == dest_type){
                             break;
                         }
 
-                        auto struct_type = global_context->get_struct(parent);
+                        auto struct_type = global_context.get_struct(parent);
                         parent = struct_type->parent_type;
 
-                        offset += global_context->self_size_of_struct(struct_type);
+                        offset += global_context.self_size_of_struct(struct_type);
                     }
 
                     auto t1 = function.context->new_temporary(type->is_pointer() ? type : new_pointer_type(type));
@@ -687,13 +687,13 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
     }
 
     result_type operator()(ast::New& new_) const {
-        auto type = visit(ast::TypeTransformer(*function.context->global()), new_.type);
+        auto type = visit(ast::TypeTransformer(function.context->global()), new_.type);
 
-        function.emplace_back(mtac::Operator::PARAM, static_cast<int>(type->size()), "a", function.context->global()->getFunction("_F5allocI"));
+        function.emplace_back(mtac::Operator::PARAM, static_cast<int>(type->size()), "a", function.context->global().getFunction("_F5allocI"));
 
         auto t1 = function.context->new_temporary(new_pointer_type(INT));
 
-        function.emplace_back(mtac::Operator::CALL, function.context->global()->getFunction("_F5allocI"), t1);
+        function.emplace_back(mtac::Operator::CALL, function.context->global().getFunction("_F5allocI"), t1);
 
         //If structure type, call the constructor
         if(type->is_custom_type() || type->is_template_type()){
@@ -712,11 +712,11 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
         function.emplace_back(size, size_temp, mtac::Operator::MUL, static_cast<int>(type->data_type()->size()));
         function.emplace_back(size, size, mtac::Operator::ADD, static_cast<int>(INT->size()));
 
-        function.emplace_back(mtac::Operator::PARAM, size, "a", function.context->global()->getFunction("_F5allocI"));
+        function.emplace_back(mtac::Operator::PARAM, size, "a", function.context->global().getFunction("_F5allocI"));
 
         auto t1 = function.context->new_temporary(new_pointer_type(INT));
 
-        function.emplace_back(mtac::Operator::CALL, function.context->global()->getFunction("_F5allocI"), t1);
+        function.emplace_back(mtac::Operator::CALL, function.context->global().getFunction("_F5allocI"), t1);
 
         function.emplace_back(t1, 0, mtac::Operator::DOT_ASSIGN, size_temp);
 
@@ -766,7 +766,7 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
     }
 
     result_type operator()(ast::FunctionCall& call) const {
-        auto& definition = call.context->global()->getFunction(call.mangled_name);
+        auto& definition = call.context->global().getFunction(call.mangled_name);
         auto type = definition.return_type();
 
         if(type == VOID){
@@ -1089,14 +1089,14 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
                 if (dest_type->data_type()->is_structure() && src_type->data_type()->is_structure()) {
                     auto t1 = function.context->new_temporary(dest_type);
 
-                    auto global_context = function.context->global();
+                    auto & global_context = function.context->global();
 
-                    auto src_struct_type = global_context->get_struct(src_type);
-                    auto dest_struct_type = global_context->get_struct(dest_type);
+                    auto src_struct_type = global_context.get_struct(src_type);
+                    auto dest_struct_type = global_context.get_struct(dest_type);
 
                     bool is_parent = false;
                     auto parent = src_struct_type->parent_type;
-                    int offset = global_context->self_size_of_struct(src_struct_type);
+                    int offset = global_context.self_size_of_struct(src_struct_type);
 
                     while (parent) {
                         if (parent == dest_type->data_type()) {
@@ -1104,10 +1104,10 @@ struct ToArgumentsVisitor : public boost::static_visitor<arguments> {
                             break;
                         }
 
-                        auto struct_type = global_context->get_struct(parent);
+                        auto struct_type = global_context.get_struct(parent);
                         parent = struct_type->parent_type;
 
-                        offset += global_context->self_size_of_struct(struct_type);
+                        offset += global_context.self_size_of_struct(struct_type);
                     }
 
                     if (is_parent) {
@@ -1393,8 +1393,8 @@ class FunctionCompiler : public boost::static_visitor<> {
         AUTO_IGNORE_ARRAY_DECLARATION()
         AUTO_IGNORE_MEMBER_DECLARATION();
 
-        void issue_destructors(const std::shared_ptr<Context>& context) {
-            for (const auto& pair : *context) {
+        void issue_destructors(Context & context) {
+            for (const auto& pair : context) {
                 auto var = pair.second;
 
                 if(var->position().isStack() || var->position().is_variable()){
@@ -1415,7 +1415,7 @@ class FunctionCompiler : public boost::static_visitor<> {
 
                 visit_each(*this, if_.instructions);
 
-                issue_destructors(if_.context);
+                issue_destructors(*if_.context);
 
                 if (if_.else_) {
                     const std::string elseLabel = newLabel();
@@ -1426,7 +1426,7 @@ class FunctionCompiler : public boost::static_visitor<> {
 
                     visit_each(*this, (*if_.else_).instructions);
 
-                    issue_destructors((*if_.else_).context);
+                    issue_destructors(*(*if_.else_).context);
 
                     function.emplace_back(elseLabel, mtac::Operator::LABEL);
                 } else {
@@ -1440,7 +1440,7 @@ class FunctionCompiler : public boost::static_visitor<> {
 
                 visit_each(*this, if_.instructions);
 
-                issue_destructors(if_.context);
+                issue_destructors(*if_.context);
 
                 function.emplace_back(end, mtac::Operator::GOTO);
 
@@ -1464,7 +1464,7 @@ class FunctionCompiler : public boost::static_visitor<> {
 
                     visit_each(*this, elseIf.instructions);
 
-                    issue_destructors(elseIf.context);
+                    issue_destructors(*elseIf.context);
 
                     function.emplace_back(end, mtac::Operator::GOTO);
                 }
@@ -1474,7 +1474,7 @@ class FunctionCompiler : public boost::static_visitor<> {
 
                     visit_each(*this, (*if_.else_).instructions);
 
-                    issue_destructors((*if_.else_).context);
+                    issue_destructors(*(*if_.else_).context);
                 }
 
                 function.emplace_back(end, mtac::Operator::LABEL);
@@ -1514,13 +1514,13 @@ class FunctionCompiler : public boost::static_visitor<> {
 
             visit_each(*this, while_.instructions);
 
-            issue_destructors(while_.context);
+            issue_destructors(*while_.context);
 
             jump_if_true(function, startLabel, while_.condition);
         }
 
         void operator()(ast::Return& return_){
-            auto& definition = return_.context->global()->getFunction(return_.mangled_name);
+            auto& definition = return_.context->global().getFunction(return_.mangled_name);
             auto return_type = definition.return_type();
 
             //If the function returns a struct by value, it does not really returns something
@@ -1711,7 +1711,7 @@ void mtac::Compiler::compile(ast::SourceFile& source, const std::shared_ptr<Stri
                 FunctionCompiler compiler(program, function);
 
                 visit_each(compiler, ptr->instructions);
-                compiler.issue_destructors(ptr->context);
+                compiler.issue_destructors(*ptr->context);
             }
         } else if(auto* struct_ptr = boost::get<ast::struct_definition>(&block)){
             if(!struct_ptr->is_template_declaration()){
@@ -1725,7 +1725,7 @@ void mtac::Compiler::compile(ast::SourceFile& source, const std::shared_ptr<Stri
                             FunctionCompiler compiler(program, function);
 
                             visit_each(compiler, ptr->instructions);
-                            compiler.issue_destructors(ptr->context);
+                            compiler.issue_destructors(*ptr->context);
                         }
                     } else if(auto* ptr = boost::get<ast::Constructor>(&struct_block)){
                         program.functions.emplace_back(ptr->context, ptr->mangledName, program.context->getFunction(ptr->mangledName));
@@ -1735,7 +1735,7 @@ void mtac::Compiler::compile(ast::SourceFile& source, const std::shared_ptr<Stri
                         FunctionCompiler compiler(program, function);
 
                         visit_each(compiler, ptr->instructions);
-                        compiler.issue_destructors(ptr->context);
+                        compiler.issue_destructors(*ptr->context);
                     } else if(auto* ptr = boost::get<ast::Destructor>(&struct_block)){
                         program.functions.emplace_back(ptr->context, ptr->mangledName, program.context->getFunction(ptr->mangledName));
                         auto& function = program.functions.back();
@@ -1744,7 +1744,7 @@ void mtac::Compiler::compile(ast::SourceFile& source, const std::shared_ptr<Stri
                         FunctionCompiler compiler(program, function);
 
                         visit_each(compiler, ptr->instructions);
-                        compiler.issue_destructors(ptr->context);
+                        compiler.issue_destructors(*ptr->context);
                     }
                 }
             }

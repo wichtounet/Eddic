@@ -25,7 +25,7 @@ namespace ast {
  * \brief The AST node for a default switch case.
  */
 struct DefaultCase {
-    std::shared_ptr<Context> context;
+    Context * context = nullptr;
 
     std::vector<Instruction> instructions;
     x3::unused_type fake_;

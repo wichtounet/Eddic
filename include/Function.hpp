@@ -47,8 +47,8 @@ class Function {
         const std::string& name() const;
         const std::string& mangled_name() const;
 
-        std::shared_ptr<FunctionContext>& context();
-        const std::shared_ptr<FunctionContext>& context() const;
+        void set_context(FunctionContext* context);
+        FunctionContext* context() const;
 
         std::shared_ptr<const Type>& struct_type();
 
@@ -56,8 +56,8 @@ class Function {
         bool& standard();
     
     private:
-        std::shared_ptr<FunctionContext> _context;
-        std::shared_ptr<const Type> _struct_type = nullptr;
+        FunctionContext * _context = nullptr;
+        std::shared_ptr<const Type> _struct_type;
 
         std::shared_ptr<const Type> _return_type;
         std::string _name;

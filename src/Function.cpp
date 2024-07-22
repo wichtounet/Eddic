@@ -111,11 +111,11 @@ bool eddic::operator!=(const eddic::Function& lhs, const eddic::Function& rhs){
     return lhs.mangled_name() != rhs.mangled_name();
 }
 
-std::shared_ptr<FunctionContext>& Function::context(){
-    return _context;
+void Function::set_context(FunctionContext * context){
+    _context = context;
 }
 
-const std::shared_ptr<FunctionContext>& Function::context() const {
+FunctionContext* Function::context() const {
     return _context;
 }
 

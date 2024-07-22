@@ -49,7 +49,7 @@ class loop;
  */
 class Function : public std::enable_shared_from_this<Function> {
     public:
-        Function(std::shared_ptr<FunctionContext> context, std::string name, eddic::Function& definition);
+        Function(FunctionContext * context, std::string name, eddic::Function& definition);
 
         //Function cannot be copied
         Function(const Function& rhs) = delete;
@@ -212,7 +212,7 @@ class Function : public std::enable_shared_from_this<Function> {
          */
         const eddic::Function& definition() const;
 
-        std::shared_ptr<FunctionContext> context;
+        FunctionContext * context;
 
     private:
         eddic::Function* _definition;

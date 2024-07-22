@@ -24,8 +24,6 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
 
     cpp_assert(struct_.struct_type, "The struct type should be set earlier");
 
-    auto platform = context->target_platform();
-
     bool default_constructor = false;
     bool constructor = false;
     bool destructor = false;
@@ -55,7 +53,7 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
     //Generate default constructor if necessary
     if(!default_constructor && !constructor){
         ast::Constructor c;
-        c.context = std::make_shared<FunctionContext>(context, context, platform, configuration);
+        c.context = context->new_function_context(configuration).get();
         c.struct_type = struct_.struct_type;
 
         std::vector<std::shared_ptr<const eddic::Type>> types;
@@ -67,7 +65,7 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
     //Generate destructor if necessary
     if(!destructor){
         ast::Destructor d;
-        d.context = std::make_shared<FunctionContext>(context, context, platform, configuration);
+        d.context = context->new_function_context(configuration).get();
         d.struct_type = struct_.struct_type;
         d.mangledName = mangle_dtor(d.struct_type);
 
@@ -88,13 +86,13 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
         }
 
         if(possible){
-            auto function_context = std::make_shared<FunctionContext>(context, context, platform, configuration);
+            auto function_context = context->new_function_context(configuration);
 
             function_context->addParameter("this", new_pointer_type(type));
             function_context->addParameter("rhs", new_pointer_type(type));
 
             ast::Constructor c;
-            c.context = function_context;
+            c.context = function_context.get();
             c.struct_type = type;
 
             std::vector<std::shared_ptr<const eddic::Type>> types;
@@ -128,25 +126,25 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
                 auto& name = member.name;
 
                 ast::Assignment assignment;
-                assignment.context = function_context;
+                assignment.context = function_context.get();
 
                 ast::VariableValue this_value;
-                this_value.context = function_context;
+                this_value.context = function_context.get();
                 this_value.variableName = "this";
                 this_value.var = function_context->getVariable("this");
 
                 ast::Expression left_expression;
-                left_expression.context = function_context;
+                left_expression.context = function_context.get();
                 left_expression.first = this_value;
                 left_expression.operations.push_back(boost::make_tuple(ast::Operator::DOT, ast::Literal{name}));
 
                 ast::VariableValue rhs_value;
-                rhs_value.context = function_context;
+                rhs_value.context = function_context.get();
                 rhs_value.variableName = "rhs";
                 rhs_value.var = function_context->getVariable("rhs");
 
                 ast::Expression right_expression;
-                right_expression.context = function_context;
+                right_expression.context = function_context.get();
                 right_expression.first = rhs_value;
                 right_expression.operations.push_back(boost::make_tuple(ast::Operator::DOT, ast::Literal{name}));
 

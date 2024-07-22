@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <utility>
 
 #include "variant.hpp"
 #include "Context.hpp"
@@ -27,9 +28,12 @@ using namespace eddic;
 namespace {
 
 struct AnnotateVisitor : public boost::static_visitor<> {
-        std::shared_ptr<GlobalContext> globalContext;
-        std::shared_ptr<FunctionContext> functionContext;
-        std::shared_ptr<Context> currentContext;
+        GlobalContext & global_context_;
+        FunctionContext & function_context_;
+        Context * currentContext = nullptr;
+
+        AnnotateVisitor(GlobalContext & global_context, FunctionContext & function_context) :
+                global_context_(global_context), function_context_(function_context) {}
 
         AUTO_RECURSE_BUILTIN_OPERATORS()
         AUTO_RECURSE_TERNARY()
@@ -53,7 +57,7 @@ struct AnnotateVisitor : public boost::static_visitor<> {
 
         template<typename Loop>
         void annotateWhileLoop(Loop& loop){
-            currentContext = loop.context = std::make_shared<BlockContext>(currentContext, functionContext, globalContext);
+            currentContext = loop.context = currentContext->new_block_context().get();
 
             visit(*this, loop.condition);
 
@@ -81,7 +85,7 @@ struct AnnotateVisitor : public boost::static_visitor<> {
         void operator()(ast::SwitchCase& switch_case){
             visit(*this, switch_case.value);
 
-            currentContext = switch_case.context = std::make_shared<BlockContext>(currentContext, functionContext, globalContext);
+            currentContext = switch_case.context = currentContext->new_block_context().get();
 
             visit_each(*this, switch_case.instructions);
 
@@ -89,7 +93,7 @@ struct AnnotateVisitor : public boost::static_visitor<> {
         }
 
         void operator()(ast::DefaultCase& default_case){
-            currentContext = default_case.context = std::make_shared<BlockContext>(currentContext, functionContext, globalContext);
+            currentContext = default_case.context = currentContext->new_block_context().get();
 
             visit_each(*this, default_case.instructions);
 
@@ -97,7 +101,7 @@ struct AnnotateVisitor : public boost::static_visitor<> {
         }
 
         void operator()(ast::For& for_){
-            currentContext = for_.context = std::make_shared<BlockContext>(currentContext, functionContext, globalContext);
+            currentContext = for_.context = currentContext->new_block_context().get();
 
             visit_optional(*this, for_.start);
             visit_optional(*this, for_.condition);
@@ -110,7 +114,7 @@ struct AnnotateVisitor : public boost::static_visitor<> {
 
         template<typename Loop>
         void annotateSimpleLoop(Loop& loop){
-            loop.context = currentContext = std::make_shared<BlockContext>(currentContext, functionContext, globalContext);
+            loop.context = currentContext = currentContext->new_block_context().get();
 
             visit_each(*this, loop.instructions);
 
@@ -126,7 +130,7 @@ struct AnnotateVisitor : public boost::static_visitor<> {
         }
 
         void operator()(ast::If& if_){
-            currentContext = if_.context = std::make_shared<BlockContext>(currentContext, functionContext, globalContext);
+            currentContext = if_.context = currentContext->new_block_context().get();
 
             visit(*this, if_.condition);
 
@@ -139,7 +143,7 @@ struct AnnotateVisitor : public boost::static_visitor<> {
         }
 
         void operator()(ast::ElseIf& elseIf){
-            currentContext = elseIf.context = std::make_shared<BlockContext>(currentContext, functionContext, globalContext);
+            currentContext = elseIf.context = currentContext->new_block_context().get();
 
             visit(*this, elseIf.condition);
 
@@ -149,7 +153,7 @@ struct AnnotateVisitor : public boost::static_visitor<> {
         }
 
         void operator()(ast::Else& else_){
-            currentContext = else_.context = std::make_shared<BlockContext>(currentContext, functionContext, globalContext);
+            currentContext = else_.context = currentContext->new_block_context().get();
 
             visit_each(*this, else_.instructions);
 
@@ -186,7 +190,7 @@ struct AnnotateVisitor : public boost::static_visitor<> {
         }
 
         void operator()(ast::Return& return_){
-            return_.context = functionContext;
+            return_.context = &function_context_;
 
             visit(*this, return_.value);
         }
@@ -216,11 +220,9 @@ struct AnnotateVisitor : public boost::static_visitor<> {
         }
 };
 
-inline AnnotateVisitor make_visitor(std::shared_ptr<GlobalContext> globalContext, std::shared_ptr<FunctionContext> functionContext, std::shared_ptr<Context> currentContext){
-    AnnotateVisitor visitor;
-    visitor.globalContext = globalContext;
+inline AnnotateVisitor make_visitor(std::shared_ptr<GlobalContext> globalContext, FunctionContext & functionContext, Context * currentContext){
+    AnnotateVisitor visitor(*globalContext, functionContext);
     visitor.currentContext = currentContext;
-    visitor.functionContext = functionContext;
     return visitor;
 }
 
@@ -228,9 +230,11 @@ inline AnnotateVisitor make_visitor(std::shared_ptr<GlobalContext> globalContext
 
 void ast::ContextAnnotationPass::apply_program(ast::SourceFile& program, bool indicator){
     if(indicator){
-        currentContext = globalContext = program.context;
+        globalContext = program.context;
+        currentContext = globalContext.get();
     } else {
-        currentContext = globalContext = program.context;
+        globalContext = program.context;
+        currentContext = globalContext.get();
 
         for(auto it = program.begin(); it < program.end(); ++it){
             if(auto* ptr = boost::get<ast::GlobalVariableDeclaration>(&*it)){
@@ -243,8 +247,8 @@ void ast::ContextAnnotationPass::apply_program(ast::SourceFile& program, bool in
 }
 
 #define HANDLE_FUNCTION() \
-    currentContext = function.context = functionContext = std::make_shared<FunctionContext>(currentContext, globalContext, platform, configuration); \
-    auto visitor = make_visitor(globalContext, functionContext, currentContext); \
+    currentContext = function.context = functionContext = globalContext->new_function_context(configuration).get(); \
+    auto visitor = make_visitor(globalContext, *functionContext, currentContext); \
     visit_each(visitor, function.instructions); \
     currentContext = currentContext->parent();
 
