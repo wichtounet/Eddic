@@ -16,6 +16,7 @@
 #include "SemanticalException.hpp"
 #include "TerminationException.hpp"
 #include "GlobalContext.hpp"
+#include "logging.hpp"
 
 #include "FrontEnd.hpp"
 #include "FrontEnds.hpp"
@@ -117,6 +118,11 @@ int Compiler::compile_only(const std::string& file, Platform platform, const std
     //Display timings if necessary
     if(program && configuration->option_defined("time")){
         program->context->timing().display();
+    }
+
+    if (program) {
+        // In theory, this shoud be one only at this point
+        log::emit<Debug>("Compiler") << "context->use_count() = " << program->context.use_count() << log::endl;
     }
 
     return code;
