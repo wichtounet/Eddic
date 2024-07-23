@@ -65,10 +65,20 @@ int Compiler::compile(const std::string& file, const std::shared_ptr<Configurati
     return code;
 }
 
+void Compiler::setup_context(Platform platform) {
+    // Initialize the types
+    init_global_types(platform);
+
+    // Initialize the global context
+    context = std::make_unique<GlobalContext>(platform);
+}
+
 int Compiler::compile_only(const std::string& file, Platform platform, const std::shared_ptr<Configuration> & configuration) {
     int code = 0;
 
     std::unique_ptr<mtac::Program> program;
+
+    setup_context(platform);
 
     try {
         //Make sure that the file exists
@@ -94,11 +104,7 @@ int Compiler::compile_only(const std::string& file, Platform platform, const std
         }
     } catch (const SemanticalException& e) {
         if(!configuration->option_defined("quiet")){
-            if(program){
-                output_exception(e, program->context);
-            } else {
-                output_exception(e, nullptr);
-            }
+            output_exception(e);
         }
 
         code = 1;
@@ -110,19 +116,14 @@ int Compiler::compile_only(const std::string& file, Platform platform, const std
     if(program && configuration->option_defined("stats")){
         std::cout << "Statistics" << '\n';
 
-        for(const auto& counter : program->context->stats()){
+        for(const auto& counter : program->context.stats()){
             std::cout << "\t" << counter.first << ":" << counter.second << '\n';
         }
     }
 
     //Display timings if necessary
     if(program && configuration->option_defined("time")){
-        program->context->timing().display();
-    }
-
-    if (program) {
-        // In theory, this shoud be one only at this point
-        log::emit<Debug>("Compiler") << "context->use_count() = " << program->context.use_count() << log::endl;
+        program->context.timing().display();
     }
 
     return code;
@@ -131,7 +132,7 @@ int Compiler::compile_only(const std::string& file, Platform platform, const std
 std::unique_ptr<mtac::Program> Compiler::compile_mtac(const std::string& file, Platform platform, const std::shared_ptr<Configuration> & configuration, FrontEnd& front_end){
     front_end.set_configuration(configuration);
 
-    auto program = front_end.compile(file, platform);
+    auto program = front_end.compile(file, platform, *context);
 
     //If program is null, it means that the user didn't wanted it
     if(program){

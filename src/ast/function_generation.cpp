@@ -41,7 +41,7 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
                 default_constructor = true;
             } else if(c.parameters.size() == 1){
                 auto& parameter = c.parameters.front();
-                auto parameter_type = visit(ast::TypeTransformer(*context), parameter.parameterType);
+                auto parameter_type = visit(ast::TypeTransformer(context), parameter.parameterType);
 
                 if(parameter_type == new_pointer_type(struct_.struct_type)){
                     copy_constructor = true;
@@ -53,7 +53,7 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
     //Generate default constructor if necessary
     if(!default_constructor && !constructor){
         ast::Constructor c;
-        c.context = context->new_function_context(configuration).get();
+        c.context = context.new_function_context(configuration).get();
         c.struct_type = struct_.struct_type;
 
         std::vector<std::shared_ptr<const eddic::Type>> types;
@@ -65,7 +65,7 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
     //Generate destructor if necessary
     if(!destructor){
         ast::Destructor d;
-        d.context = context->new_function_context(configuration).get();
+        d.context = context.new_function_context(configuration).get();
         d.struct_type = struct_.struct_type;
         d.mangledName = mangle_dtor(d.struct_type);
 
@@ -75,7 +75,7 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
     //Generate copy constructor if necessary
     if(!copy_constructor){
         auto type = struct_.struct_type;
-        auto struct_type = context->get_struct_safe(type->mangle());
+        auto struct_type = context.get_struct_safe(type->mangle());
 
         bool possible = true;
         for(auto& member : struct_type->members){
@@ -86,7 +86,7 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
         }
 
         if(possible){
-            auto function_context = context->new_function_context(configuration);
+            auto function_context = context.new_function_context(configuration);
 
             function_context->addParameter("this", new_pointer_type(type));
             function_context->addParameter("rhs", new_pointer_type(type));
@@ -136,7 +136,7 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
                 ast::Expression left_expression;
                 left_expression.context = function_context.get();
                 left_expression.first = this_value;
-                left_expression.operations.push_back(boost::make_tuple(ast::Operator::DOT, ast::Literal{name}));
+                left_expression.operations.emplace_back(boost::make_tuple(ast::Operator::DOT, ast::Literal{name}));
 
                 ast::VariableValue rhs_value;
                 rhs_value.context = function_context.get();
@@ -146,7 +146,7 @@ void ast::FunctionGenerationPass::apply_struct(ast::struct_definition& struct_, 
                 ast::Expression right_expression;
                 right_expression.context = function_context.get();
                 right_expression.first = rhs_value;
-                right_expression.operations.push_back(boost::make_tuple(ast::Operator::DOT, ast::Literal{name}));
+                right_expression.operations.emplace_back(boost::make_tuple(ast::Operator::DOT, ast::Literal{name}));
 
                 assignment.left_value = left_expression;
                 assignment.value = right_expression;

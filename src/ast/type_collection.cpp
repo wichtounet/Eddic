@@ -15,7 +15,6 @@
 #include "Type.hpp"
 #include "GlobalContext.hpp"
 #include "FunctionContext.hpp"
-#include "ast/ContextAwarePass.hpp"
 #include "mangling.hpp"
 #include "logging.hpp"
 #include "VisitorUtils.hpp"
@@ -110,7 +109,7 @@ void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bo
                 auto & member = *ptr;
 
                 if (std::find(names.begin(), names.end(), member.name) != names.end()) {
-                    context->error_handler.semantical_exception("The member " + member.name + " has already been defined", member);
+                    context.error_handler.semantical_exception("The member " + member.name + " has already been defined", member);
                 }
 
                 names.push_back(member.name);
@@ -119,7 +118,7 @@ void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bo
                 auto & name   = member.arrayName;
 
                 if (std::find(names.begin(), names.end(), name) != names.end()) {
-                    context->error_handler.semantical_exception("The member " + name + " has already been defined", member);
+                    context.error_handler.semantical_exception("The member " + name + " has already been defined", member);
                 }
 
                 names.push_back(name);
@@ -131,7 +130,7 @@ void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bo
         std::vector<std::shared_ptr<const eddic::Type>> template_types;
         std::string                                     mangled_name;
         if (structure.is_template_instantation()) {
-            ast::TypeTransformer transformer(*context);
+            ast::TypeTransformer transformer(context);
 
             for (auto & type : structure.inst_template_types) {
                 template_types.push_back(visit(transformer, type));
@@ -148,11 +147,11 @@ void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bo
 
         // 2. Register the structure signature
 
-        if (context->struct_exists(mangled_name)) {
-            context->error_handler.semantical_exception("The structure " + mangled_name + " has already been defined", structure);
+        if (context.struct_exists(mangled_name)) {
+            context.error_handler.semantical_exception("The structure " + mangled_name + " has already been defined", structure);
         }
 
-        context->add_struct(std::make_shared<eddic::Struct>(mangled_name));
+        context.add_struct(std::make_shared<eddic::Struct>(mangled_name));
 
         // Collect the function templates
         TemplateCollector template_collector(*template_engine);
@@ -167,7 +166,7 @@ void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bo
     while (true) {
         bool progress = false;
 
-        IsResolved is_resolved(*context, fully_resolved);
+        IsResolved is_resolved(context, fully_resolved);
 
         auto current_pass = pending;
 
@@ -224,11 +223,11 @@ void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bo
 
             // At this point, the structure is entirely resolvable
 
-            auto signature = context->get_struct_safe(structure->mangled_name);
+            auto signature = context.get_struct_safe(structure->mangled_name);
 
             // Resolve the parent type if any
             if (structure->parent_type) {
-                signature->parent_type = visit(ast::TypeTransformer(*context), *structure->parent_type);
+                signature->parent_type = visit(ast::TypeTransformer(context), *structure->parent_type);
             }
 
             // Resolve and collect all members
@@ -237,19 +236,19 @@ void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bo
                     if (boost::smart_get<ast::PointerType>(&member->type)) {
                         signature->members.emplace_back(member->name, POINTER);
                     } else {
-                        signature->members.emplace_back(member->name, visit(ast::TypeTransformer(*context), member->type));
+                        signature->members.emplace_back(member->name, visit(ast::TypeTransformer(context), member->type));
                     }
                 } else if (auto * member = boost::get<ast::ArrayDeclaration>(&block)) {
-                    auto data_member_type = visit(ast::TypeTransformer(*context), member->arrayType);
+                    auto data_member_type = visit(ast::TypeTransformer(context), member->arrayType);
 
                     if (data_member_type->is_array()) {
-                        context->error_handler.semantical_exception("Multidimensional arrays are not permitted", *member);
+                        context.error_handler.semantical_exception("Multidimensional arrays are not permitted", *member);
                     }
 
                     if (auto * ptr = boost::get<ast::Integer>(&member->size)) {
                         signature->members.emplace_back(member->arrayName, new_array_type(data_member_type, ptr->value));
                     } else {
-                        context->error_handler.semantical_exception("Only arrays of fixed size are supported", *member);
+                        context.error_handler.semantical_exception("Only arrays of fixed size are supported", *member);
                     }
                 }
             }
@@ -268,15 +267,15 @@ void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bo
             if (structure->is_template_instantation()){
                 std::vector<std::shared_ptr<const eddic::Type>> template_types;
 
-                ast::TypeTransformer transformer(*context);
+                ast::TypeTransformer transformer(context);
 
                 for(auto& type : structure->inst_template_types){
                     template_types.push_back(visit(transformer, type));
                 }
 
-                structure->struct_type = new_template_type(*context, structure->name, template_types);
+                structure->struct_type = new_template_type(context, structure->name, template_types);
             } else {
-                structure->struct_type = new_type(*context, structure->name, false);
+                structure->struct_type = new_type(context, structure->name, false);
             }
 
             // Annotate functions with the parent struct
@@ -317,8 +316,6 @@ void ast::TypeCollectionPass::apply_struct(ast::struct_definition& structure, bo
 }
 
 void ast::TypeCollectionPass::apply_program(ast::SourceFile& program, bool indicator){
-    ContextAwarePass::apply_program(program, indicator);
-
     if (!indicator) { // We only collect template declarations once
         TemplateCollector template_collector(*template_engine);
         template_collector(program);

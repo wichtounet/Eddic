@@ -37,8 +37,7 @@ class SemanticalException: public std::exception {
         virtual const char* what() const throw();
 };
 
-//TODO Remove second parameter
-void output_exception(const SemanticalException& e, std::shared_ptr<GlobalContext> context);
+void output_exception(const SemanticalException& e);
 
 } //end of eddic
 

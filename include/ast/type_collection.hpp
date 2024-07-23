@@ -11,14 +11,17 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "ast/ContextAwarePass.hpp"
+#include "ast/Pass.hpp"
 #include "Type.hpp"
 
 namespace eddic::ast {
 
-struct TypeCollectionPass : ContextAwarePass {
+struct TypeCollectionPass : Pass {
     void apply_program(ast::SourceFile& program, bool indicator) override;
     void apply_struct(ast::struct_definition & struct_, bool indicator) override;
+
+    GlobalContext & context;
+    TypeCollectionPass(GlobalContext & context) : context(context) {}
 
 private:
     std::unordered_map<std::string, std::shared_ptr<const eddic::Type>> fully_resolved;

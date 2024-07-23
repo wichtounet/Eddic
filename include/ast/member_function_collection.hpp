@@ -8,7 +8,7 @@
 #ifndef AST_MEMBER_FUNCTION_COLLECTION_PASS_H
 #define AST_MEMBER_FUNCTION_COLLECTION_PASS_H
 
-#include "ast/ContextAwarePass.hpp"
+#include "ast/Pass.hpp"
 
 namespace eddic {
 

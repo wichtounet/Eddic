@@ -28,12 +28,12 @@ namespace as {
  */
 class IntelCodeGenerator : public CodeGenerator {
     public:
-        IntelCodeGenerator(AssemblyFileWriter& writer, mtac::Program& program, std::shared_ptr<GlobalContext> context);
+        IntelCodeGenerator(AssemblyFileWriter& writer, mtac::Program& program, GlobalContext & context);
         
         void generate(StringPool& pool, FloatPool& float_pool) override;
 
     protected:
-        std::shared_ptr<GlobalContext> context;
+        GlobalContext & context;
 
         void addGlobalVariables(StringPool& pool, FloatPool& float_pool);
         

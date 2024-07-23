@@ -512,7 +512,6 @@ bool mtac::inline_functions::gate(std::shared_ptr<Configuration> configuration){
 
 bool mtac::inline_functions::operator()(mtac::Program& program){
     bool optimized = false;
-    auto global_context = program.context;
 
     auto& call_graph = program.cg;
 
@@ -535,7 +534,7 @@ bool mtac::inline_functions::operator()(mtac::Program& program){
                 std::vector<func_ref> callers;
                 for(auto& in_edge : cg_node->in_edges){
                     if(in_edge->count > 0){
-                        callers.push_back(in_edge->source->function);
+                        callers.emplace_back(in_edge->source->function);
                     }
                 }
 

@@ -8,8 +8,6 @@
 #ifndef CODE_GENERATOR_FACTORY_H
 #define CODE_GENERATOR_FACTORY_H
 
-#include <memory>
-
 #include "Platform.hpp"
 
 #include "asm/CodeGenerator.hpp"
@@ -31,7 +29,7 @@ struct CodeGeneratorFactory {
      * \param writer The assembly file writer to use. 
      * \return A pointer to the code generator corresponding to the platform. 
      */
-    std::unique_ptr<CodeGenerator> get(Platform platform, AssemblyFileWriter& writer, mtac::Program& program, std::shared_ptr<GlobalContext> context);
+    std::unique_ptr<CodeGenerator> get(Platform platform, AssemblyFileWriter& writer, mtac::Program& program, GlobalContext & context);
 };
 
 } //end of as

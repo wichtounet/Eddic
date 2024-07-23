@@ -60,7 +60,7 @@ void apply_pass(ast::Pass & pass, ast::struct_definition& struct_){
 void apply_pass(ast::Pass & pass, ast::SourceFile& program, Configuration & configuration){
     LOG<Info>("Passes") << "Run (standard) pass \"" << pass.name() << "\"" << log::endl;
 
-    program.context->stats().inc_counter("passes");
+    program.context.stats().inc_counter("passes");
 
     for(unsigned int i = 0; i < pass.passes(); ++i){
         pass.set_current_pass(i);
@@ -83,7 +83,7 @@ void apply_pass(ast::Pass & pass, ast::SourceFile& program, Configuration & conf
                 }
             } catch (const SemanticalException& e){
                 if(!configuration.option_defined("quiet")){
-                    output_exception(e, program.context);
+                    output_exception(e);
                 }
 
                 valid = false;
@@ -114,6 +114,20 @@ std::shared_ptr<Pass> make_pass(const std::string& name, std::shared_ptr<ast::Te
     return pass;
 }
 
+template<typename Pass>
+std::shared_ptr<Pass> make_pass_c(const std::string& name, std::shared_ptr<ast::TemplateEngine> template_engine,
+            Platform platform, std::shared_ptr<Configuration> configuration, std::shared_ptr<StringPool> pool, GlobalContext & context){
+    auto pass = std::make_shared<Pass>(context);
+
+    pass->set_name(name);
+    pass->set_template_engine(template_engine);
+    pass->set_platform(platform);
+    pass->set_configuration(configuration);
+    pass->set_string_pool(pool);
+
+    return pass;
+}
+
 } //end of anonymous namespace
 
 ast::PassManager::PassManager(Platform platform, std::shared_ptr<Configuration> configuration, ast::SourceFile& program, std::shared_ptr<StringPool> pool) :
@@ -126,19 +140,19 @@ void ast::PassManager::init_passes(){
     passes.push_back(make_pass<ast::CleanPass>("clean", template_engine, platform, configuration, pool));
 
     //Context annotation pass
-    passes.push_back(make_pass<ast::ContextAnnotationPass>("context annotation", template_engine, platform, configuration, pool));
+    passes.push_back(make_pass_c<ast::ContextAnnotationPass>("context annotation", template_engine, platform, configuration, pool, program_.context));
 
     //Type collection pass
-    passes.push_back(make_pass<ast::TypeCollectionPass>("type collection", template_engine, platform, configuration, pool));
+    passes.push_back(make_pass_c<ast::TypeCollectionPass>("type collection", template_engine, platform, configuration, pool, program_.context));
 
     //Type finalization pass
-    passes.push_back(make_pass<ast::TypeFinalizationPass>("type finalization", template_engine, platform, configuration, pool));
+    passes.push_back(make_pass_c<ast::TypeFinalizationPass>("type finalization", template_engine, platform, configuration, pool, program_.context));
 
     //Function Generation Pass
-    passes.push_back(make_pass<ast::FunctionGenerationPass>("function generation", template_engine, platform, configuration, pool));
+    passes.push_back(make_pass_c<ast::FunctionGenerationPass>("function generation", template_engine, platform, configuration, pool, program_.context));
 
     //Structures check pass
-    passes.push_back(make_pass<ast::StructureCheckPass>("structure check", template_engine, platform, configuration, pool));
+    passes.push_back(make_pass_c<ast::StructureCheckPass>("structure check", template_engine, platform, configuration, pool, program_.context));
 
     //Add default values to declarations
     passes.push_back(make_pass<ast::DefaultValuesPass>("default values", template_engine, platform, configuration, pool));
@@ -147,13 +161,13 @@ void ast::PassManager::init_passes(){
     passes.push_back(make_pass<ast::MemberFunctionCollectionPass>("member function collection", template_engine, platform, configuration, pool));
 
     //Function collection pass
-    passes.push_back(make_pass<ast::FunctionCollectionPass>("function collection", template_engine, platform, configuration, pool));
+    passes.push_back(make_pass_c<ast::FunctionCollectionPass>("function collection", template_engine, platform, configuration, pool, program_.context));
 
     //Variables annotation pass
-    passes.push_back(make_pass<ast::VariableAnnotationPass>("variables annotation", template_engine, platform, configuration, pool));
+    passes.push_back(make_pass_c<ast::VariableAnnotationPass>("variables annotation", template_engine, platform, configuration, pool, program_.context));
 
     //Function check pass
-    passes.push_back(make_pass<ast::FunctionCheckPass>("function check", template_engine, platform, configuration, pool));
+    passes.push_back(make_pass_c<ast::FunctionCheckPass>("function check", template_engine, platform, configuration, pool, program_.context));
 
     //String collection pass
     passes.push_back(make_pass<ast::StringCollectionPass>("string collection", template_engine, platform, configuration, pool));
@@ -172,7 +186,7 @@ void ast::PassManager::apply_function_instantiated(Pass & pass, ast::TemplateFun
     for (unsigned int i = 0; i < pass.passes(); ++i) {
         LOG<Info>("Passes") << "Run (template) pass \"" << pass.name() << "\":" << i << log::endl;
 
-        program_.context->stats().inc_counter("passes");
+        program_.context.stats().inc_counter("passes");
 
         pass.set_current_pass(i);
         pass.apply_program(program_, true);
@@ -187,7 +201,7 @@ void ast::PassManager::apply_member_function_instantiated(Pass & pass, ast::stru
     for (unsigned int i = 0; i < pass.passes(); ++i) {
         LOG<Info>("Passes") << "Run (template) pass \"" << pass.name() << "\":" << i << log::endl;
 
-        program_.context->stats().inc_counter("passes");
+        program_.context.stats().inc_counter("passes");
 
         pass.set_current_pass(i);
         pass.apply_program(program_, true);
@@ -203,7 +217,7 @@ void ast::PassManager::apply_struct_instantiated(Pass & pass, ast::struct_defini
     for (unsigned int i = 0; i < pass.passes(); ++i) {
         LOG<Info>("Passes") << "Run (template) pass \"" << pass.name() << "\":" << i << log::endl;
 
-        program_.context->stats().inc_counter("passes");
+        program_.context.stats().inc_counter("passes");
 
         pass.set_current_pass(i);
         pass.apply_program(program_, true);
@@ -275,7 +289,7 @@ void ast::PassManager::dec_depth(){
 }
 
 void ast::PassManager::run_passes(){
-    timing_timer timer(program_.context->timing(), "ast_passes");
+    timing_timer timer(program_.context.timing(), "ast_passes");
 
     for(auto& pass : passes){
         //A simple pass is only applied once to the whole program

@@ -21,7 +21,8 @@ struct VariableAnnotationPass : Pass {
     void apply_struct_destructor(ast::Destructor& destructor) override;
     void apply_program(ast::SourceFile& program, bool indicator) override;
 
-    std::shared_ptr<GlobalContext> context;
+    GlobalContext & context;
+    VariableAnnotationPass(GlobalContext & context) : context(context) {}
 };
 
 } //end of ast

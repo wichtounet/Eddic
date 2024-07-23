@@ -21,7 +21,7 @@
 
 using namespace eddic;
 
-as::IntelCodeGenerator::IntelCodeGenerator(AssemblyFileWriter& w, mtac::Program& program, std::shared_ptr<GlobalContext> context) : CodeGenerator(w, program), context(context) {}
+as::IntelCodeGenerator::IntelCodeGenerator(AssemblyFileWriter& w, mtac::Program& program, GlobalContext& context) : CodeGenerator(w, program), context(context) {}
 
 void as::IntelCodeGenerator::generate(StringPool& pool, FloatPool& float_pool){
     resetNumbering();
@@ -40,7 +40,7 @@ void as::IntelCodeGenerator::generate(StringPool& pool, FloatPool& float_pool){
 void as::IntelCodeGenerator::addGlobalVariables(StringPool& pool, FloatPool& float_pool){
     defineDataSection();
 
-    for(const auto& it : context->getVariables()){
+    for(const auto& it : context.getVariables()){
         const auto & variable = it.second; 
         const auto & type = variable->type();
 
@@ -76,11 +76,11 @@ void as::IntelCodeGenerator::addGlobalVariables(StringPool& pool, FloatPool& flo
         }
     }
 
-    for (auto it : pool.getPool()){
+    for (const auto& it : pool.getPool()){
         declareString(it.second, it.first);
     }
 
-    for (auto it : float_pool.get_pool()){
+    for (const auto& it : float_pool.get_pool()){
         declareFloat(it.second, it.first);
     }
 }

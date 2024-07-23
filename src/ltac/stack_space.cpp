@@ -48,7 +48,7 @@ void optimize_ranges(std::vector<std::pair<int, int>>& memset_ranges){
 } //end of anonymous namespace
 
 void ltac::alloc_stack_space(mtac::Program& program){
-    timing_timer timer(program.context->timing(), "stack_space");
+    timing_timer timer(program.context.timing(), "stack_space");
 
     for(auto& function : program.functions){
         auto bb = function.entry_bb();
@@ -102,7 +102,7 @@ void ltac::alloc_stack_space(mtac::Program& program){
             }
         }
 
-        auto function_context = function.context;
+        auto * function_context = function.context;
 
         //Set the sizes of arrays
 

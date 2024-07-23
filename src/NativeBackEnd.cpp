@@ -88,7 +88,7 @@ void NativeBackEnd::generate(mtac::Program& program, Platform platform){
         auto object_file_name = input_file_name + ".o";
 
         {
-            timing_timer timer(program.context->timing(), "assembly_generation");
+            timing_timer timer(program.context.timing(), "assembly_generation");
 
             //Generate assembly from TAC
             AssemblyFileWriter writer(asm_file_name);
@@ -104,7 +104,7 @@ void NativeBackEnd::generate(mtac::Program& program, Platform platform){
 
         //If it's necessary, assemble and link the assembly
         if(!configuration->option_defined("assembly")){
-            timing_timer timer(program.context->timing(), "assemble");
+            timing_timer timer(program.context.timing(), "assemble");
 
             verify_dependencies();
 

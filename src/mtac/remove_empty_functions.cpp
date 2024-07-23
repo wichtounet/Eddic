@@ -23,7 +23,7 @@ bool mtac::remove_empty_functions::operator()(mtac::Program& program){
     program.functions.erase(std::remove_if(program.functions.begin(), program.functions.end(), 
         [&program,&removed_functions](auto& function){
             if(!function.is_main() && function.size_no_nop() == 0){
-                program.context->stats().inc_counter("empty_function_removed");
+                program.context.stats().inc_counter("empty_function_removed");
                 LOG<Debug>("Optimizer") << "Remove empty function " << function.get_name() << log::endl;
                 
                 removed_functions.push_back(function.get_name());

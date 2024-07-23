@@ -885,7 +885,7 @@ bool debug(const std::string& name, bool b, mtac::Function& function){
 } //end of anonymous namespace
 
 void eddic::ltac::optimize(mtac::Program& program, Platform platform){
-    timing_timer timer(program.context->timing(), "peephole_optimization");
+    timing_timer timer(program.context.timing(), "peephole_optimization");
 
     for(auto& function : program.functions){
         if(log::enabled<Debug>()){

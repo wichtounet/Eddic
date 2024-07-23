@@ -631,9 +631,10 @@ void validate_stats_mtac(const std::string& file, const std::string & name, size
 
     eddic::Compiler compiler;
     eddic::EDDIFrontEnd front_end;
+    compiler.setup_context(eddic::Platform::INTEL_X86_64);
     auto program = compiler.compile_mtac("test/cases/" + file, eddic::Platform::INTEL_X86_64, configuration, front_end);
 
-    BOOST_TEST(program->context->stats().counter_safe(name) == value);
+    BOOST_TEST(program->context.stats().counter_safe(name) == value);
 }
 
 void compute_stats_ltac(const std::string& file, const std::string & name, size_t value){
@@ -641,12 +642,13 @@ void compute_stats_ltac(const std::string& file, const std::string & name, size_
 
     eddic::Compiler compiler;
     eddic::EDDIFrontEnd front_end;
+    compiler.setup_context(eddic::Platform::INTEL_X86_64);
     auto program = compiler.compile_mtac("test/cases/" + file, eddic::Platform::INTEL_X86_64, configuration, front_end);
     compiler.compile_ltac(*program, eddic::Platform::INTEL_X86_64, configuration, front_end);
 
     remove("test/cases/" + file + ".out");
 
-    BOOST_TEST(program->context->stats().counter_safe(name) == value);
+    BOOST_TEST(program->context.stats().counter_safe(name) == value);
 }
 
 BOOST_AUTO_TEST_CASE( parameter_propagation ){

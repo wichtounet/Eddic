@@ -21,7 +21,7 @@
 using namespace eddic;
 
 void mtac::BasicBlockExtractor::extract(mtac::Program& program) const {
-    timing_timer timer(program.context->timing(), "basic_block_extraction");
+    timing_timer timer(program.context.timing(), "basic_block_extraction");
 
     for(auto& function : program.functions){
         std::unordered_map<std::string, std::shared_ptr<basic_block>> labels;

@@ -25,6 +25,6 @@ const std::string& SemanticalException::message() const {
     return m_message;
 }
 
-void eddic::output_exception(const SemanticalException& e, std::shared_ptr<GlobalContext>){
+void eddic::output_exception(const SemanticalException& e){
     std::cout << e.what() << std::endl;
 }

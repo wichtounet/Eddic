@@ -47,7 +47,7 @@ class DependencyVisitor : public boost::static_visitor<> {
                 throw SemanticalException("The header " + import.header + " does not exist");
             }
 
-            ast::SourceFile dependency;
+            ast::SourceFile dependency(source_program.context);
             if(parser.parse(headerFile, dependency, source_program.context)){
                 (*this)(dependency);
 
@@ -76,7 +76,7 @@ class DependencyVisitor : public boost::static_visitor<> {
                 throw SemanticalException("The file " + file + " does not exist");
             }
 
-            ast::SourceFile dependency;
+            ast::SourceFile dependency(source_program.context);
             if(parser.parse(file, dependency, source_program.context)){
                 (*this)(dependency);
 

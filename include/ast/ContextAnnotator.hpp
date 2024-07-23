@@ -15,6 +15,7 @@
 namespace eddic {
 
 class Context;
+class GlobalContext;
 
 namespace ast {
 
@@ -26,8 +27,10 @@ class ContextAnnotationPass : public Pass {
         void apply_struct_constructor(ast::Constructor& constructor) override;
         void apply_struct_destructor(ast::Destructor& destructor) override;
 
+        ContextAnnotationPass(GlobalContext & context) : globalContext(context) {}
+
     private:
-        std::shared_ptr<GlobalContext> globalContext;
+        GlobalContext & globalContext;
         FunctionContext * functionContext = nullptr;
         Context * currentContext = nullptr;
 };

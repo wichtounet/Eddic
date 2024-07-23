@@ -11,13 +11,16 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "ast/ContextAwarePass.hpp"
+#include "ast/Pass.hpp"
 #include "Type.hpp"
 
 namespace eddic::ast {
 
-struct TypeFinalizationPass : ContextAwarePass {
+struct TypeFinalizationPass : Pass {
     void apply_struct(ast::struct_definition & struct_, bool indicator) override;
+
+    GlobalContext & context;
+    TypeFinalizationPass(GlobalContext & context) : context(context) {}
 };
 
 } // namespace eddic::ast

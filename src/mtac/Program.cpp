@@ -13,10 +13,6 @@
 
 using namespace eddic;
 
-mtac::Program::Program(){
-    //Nothing to do
-}
-
 mtac::Function& mtac::Program::mtac_function(const eddic::Function& function){
     for(auto& f : functions){
         if(f.definition() == function){

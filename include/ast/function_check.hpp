@@ -8,13 +8,15 @@
 #ifndef AST_FUNCTION_CHECK_PASS_H
 #define AST_FUNCTION_CHECK_PASS_H
 
-#include "ast/ContextAwarePass.hpp"
+#include "ast/Pass.hpp"
 
 namespace eddic {
 
+struct GlobalContext;
+
 namespace ast {
 
-struct FunctionCheckPass : ContextAwarePass {
+struct FunctionCheckPass : Pass {
     void apply_function(ast::TemplateFunctionDeclaration& function) override;
     void apply_struct(ast::struct_definition& struct_, bool indicator) override;
     void apply_struct_function(ast::TemplateFunctionDeclaration& function) override;
@@ -22,7 +24,8 @@ struct FunctionCheckPass : ContextAwarePass {
     void apply_struct_destructor(ast::Destructor& destructor) override;
     void apply_program(ast::SourceFile& program, bool indicator) override;
 
-    std::shared_ptr<GlobalContext> context;
+    GlobalContext & context;
+    FunctionCheckPass(GlobalContext & context) : context(context) {}
 };
 
 } //end of ast

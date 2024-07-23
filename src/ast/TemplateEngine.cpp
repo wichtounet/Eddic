@@ -823,7 +823,7 @@ void ast::TemplateEngine::check_function(std::vector<ast::Type>& template_types,
     auto & program = pass_manager.program();
 
     if (!function_templates.contains(context) || !function_templates[context].contains(name)) {
-        program.context->error_handler.semantical_exception("There are no registered template function named " + name, position);
+        program.context.error_handler.semantical_exception("There are no registered template function named " + name, position);
     }
 
     auto it = function_templates[context].find(name);
@@ -839,7 +839,7 @@ void ast::TemplateEngine::check_function(std::vector<ast::Type>& template_types,
         ++it;
     }
 
-    pass_manager.program().context->error_handler.semantical_exception("No matching template function " + name, position);
+    pass_manager.program().context.error_handler.semantical_exception("No matching template function " + name, position);
 }
 
 void ast::TemplateEngine::check_type(ast::Type& type, x3::file_position_tagged& position){
@@ -850,7 +850,7 @@ void ast::TemplateEngine::check_type(ast::Type& type, x3::file_position_tagged& 
         auto it = class_templates.find(name);
 
         if(it == class_templates.end()){
-            pass_manager.program().context->error_handler.semantical_exception("There are no class template named " + name, position);
+            pass_manager.program().context.error_handler.semantical_exception("There are no class template named " + name, position);
         }
 
         while(it != class_templates.end()){

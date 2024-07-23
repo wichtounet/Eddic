@@ -90,8 +90,8 @@ bool mtac::parameter_propagation::operator()(mtac::Program& program){
     auto arguments = collect_arguments(program);
 
     for(auto& function_map : arguments){
-        auto& function_name = function_map.first;
-        auto& function = program.context->getFunction(function_name);
+        const auto& function_name = function_map.first;
+        auto& function = program.context.getFunction(function_name);
         auto& function_arguments = function_map.second;
 
         std::vector<std::pair<std::size_t, int>> constant_parameters;
@@ -136,7 +136,7 @@ bool mtac::parameter_propagation::operator()(mtac::Program& program){
                 auto param = mtac_function.context->getVariable(function.parameter(parameter.first).name());
 
                 log::emit<Debug>("Optimizer") << "Propagate " << param->name() << " by " << parameter.second  << " in function " << function.name() << log::endl;
-                program.context->stats().inc_counter("propagated_parameter");
+                program.context.stats().inc_counter("propagated_parameter");
 
                 clones[param] = parameter.second;
             }

@@ -1547,7 +1547,7 @@ class FunctionCompiler : public boost::static_visitor<> {
             }
 
             const auto* free_name = "_F4freePI";
-            auto& free_function = program.context->getFunction(free_name);
+            auto& free_function = program.context.getFunction(free_name);
 
             function.emplace_back(mtac::Operator::PARAM, arg, "a", free_function);
 
@@ -1697,14 +1697,12 @@ void pass_arguments(mtac::Function& function, eddic::Function& definition, std::
 
 void mtac::Compiler::compile(ast::SourceFile& source, const std::shared_ptr<StringPool>&,
                              mtac::Program& program) const {
-    const timing_timer timer(source.context->timing(), "mtac_compilation");
-
-    program.context = source.context;
+    const timing_timer timer(source.context.timing(), "mtac_compilation");
 
     for(auto& block : source){
         if(auto* ptr = boost::get<ast::TemplateFunctionDeclaration>(&block)){
             if(!ptr->is_template()){
-                program.functions.emplace_back(ptr->context, ptr->mangledName, program.context->getFunction(ptr->mangledName));
+                program.functions.emplace_back(ptr->context, ptr->mangledName, program.context.getFunction(ptr->mangledName));
                 auto& function = program.functions.back();
                 function.standard() = ptr->standard;
 
@@ -1718,7 +1716,7 @@ void mtac::Compiler::compile(ast::SourceFile& source, const std::shared_ptr<Stri
                 for(auto& struct_block : struct_ptr->blocks){
                     if(auto* ptr = boost::get<ast::TemplateFunctionDeclaration>(&struct_block)){
                         if(!ptr->is_template()){
-                            program.functions.emplace_back(ptr->context, ptr->mangledName, program.context->getFunction(ptr->mangledName));
+                            program.functions.emplace_back(ptr->context, ptr->mangledName, program.context.getFunction(ptr->mangledName));
                             auto& function = program.functions.back();
                             function.standard() = struct_ptr->standard;
 
@@ -1728,7 +1726,7 @@ void mtac::Compiler::compile(ast::SourceFile& source, const std::shared_ptr<Stri
                             compiler.issue_destructors(*ptr->context);
                         }
                     } else if(auto* ptr = boost::get<ast::Constructor>(&struct_block)){
-                        program.functions.emplace_back(ptr->context, ptr->mangledName, program.context->getFunction(ptr->mangledName));
+                        program.functions.emplace_back(ptr->context, ptr->mangledName, program.context.getFunction(ptr->mangledName));
                         auto& function = program.functions.back();
                         function.standard() = struct_ptr->standard;
 
@@ -1737,7 +1735,7 @@ void mtac::Compiler::compile(ast::SourceFile& source, const std::shared_ptr<Stri
                         visit_each(compiler, ptr->instructions);
                         compiler.issue_destructors(*ptr->context);
                     } else if(auto* ptr = boost::get<ast::Destructor>(&struct_block)){
-                        program.functions.emplace_back(ptr->context, ptr->mangledName, program.context->getFunction(ptr->mangledName));
+                        program.functions.emplace_back(ptr->context, ptr->mangledName, program.context.getFunction(ptr->mangledName));
                         auto& function = program.functions.back();
                         function.standard() = struct_ptr->standard;
 

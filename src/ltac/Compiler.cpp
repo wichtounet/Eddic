@@ -28,7 +28,7 @@ using namespace eddic;
 ltac::Compiler::Compiler(Platform platform, std::shared_ptr<Configuration> configuration) : platform(platform), configuration(std::move(configuration)) {}
 
 void ltac::Compiler::compile(mtac::Program& source, FloatPool& float_pool){
-    timing_timer timer(source.context->timing(), "ltac_compilation");
+    timing_timer timer(source.context.timing(), "ltac_compilation");
 
     for(auto& function : source.functions){
         compile(function, float_pool);

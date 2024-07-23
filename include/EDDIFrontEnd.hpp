@@ -13,7 +13,7 @@
 namespace eddic {
 
 struct EDDIFrontEnd : public FrontEnd {
-    std::unique_ptr<mtac::Program> compile(const std::string& file, Platform platform);
+    std::unique_ptr<mtac::Program> compile(const std::string& file, Platform platform, GlobalContext & context);
 };
 
 }

@@ -105,7 +105,7 @@ bool mtac::call_graph::is_reachable(eddic::Function& function){
 }
 
 void mtac::build_call_graph(mtac::Program& program){
-    timing_timer timer(program.context->timing(), "build_cg");
+    timing_timer timer(program.context.timing(), "build_cg");
 
     auto& cg = program.cg;
 
@@ -131,7 +131,7 @@ void post_dfs_visit(mtac::call_graph_node_p& node, std::vector<std::reference_wr
         }
     }
 
-    order.push_back(node->function);
+    order.emplace_back(node->function);
 }
 
 std::vector<std::reference_wrapper<eddic::Function>> mtac::call_graph::topological_order(){

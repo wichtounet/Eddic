@@ -41,7 +41,8 @@ using SourceFileBlock = x3::variant<TemplateFunctionDeclaration, GlobalVariableD
  * \brief The AST root node for a program.
  */
 struct SourceFile : x3::file_position_tagged, std::deque<SourceFileBlock> {
-    std::shared_ptr<GlobalContext> context;
+    GlobalContext & context;
+    explicit SourceFile(GlobalContext & context) : context(context) {}
 };
 
 } //end of ast

@@ -25,7 +25,7 @@
 
 using namespace eddic;
 
-as::IntelX86_64CodeGenerator::IntelX86_64CodeGenerator(AssemblyFileWriter& w, mtac::Program& program, std::shared_ptr<GlobalContext> context) :
+as::IntelX86_64CodeGenerator::IntelX86_64CodeGenerator(AssemblyFileWriter& w, mtac::Program& program, GlobalContext & context) :
     IntelCodeGenerator(w, program, context) {}
 
 namespace {
@@ -406,12 +406,12 @@ void as::IntelX86_64CodeGenerator::writeRuntimeSupport(){
     writer.stream() << "_start:" << '\n';
 
     //If necessary init memory manager
-    if(context->exists("_F4mainAS") || program.cg.is_reachable(context->getFunction("_F4freePI")) || program.cg.is_reachable(context->getFunction("_F5allocI"))){
+    if(context.exists("_F4mainAS") || program.cg.is_reachable(context.getFunction("_F4freePI")) || program.cg.is_reachable(context.getFunction("_F5allocI"))){
         writer.stream() << "call _F4init" << '\n';
     }
 
     //If the user wants the args, we add support for them
-    if(context->exists("_F4mainAS")){
+    if(context.exists("_F4mainAS")){
         writer.stream() << "pop rbx" << '\n';                          //rbx = number of args
 
         //Calculate the size of the array
@@ -450,7 +450,7 @@ void as::IntelX86_64CodeGenerator::writeRuntimeSupport(){
     }
 
     //Give control to the user function
-    if(context->exists("_F4mainAS")){
+    if(context.exists("_F4mainAS")){
         writer.stream() << "call _F4mainAS" << '\n';
     } else {
         writer.stream() << "call _F4main" << '\n';
@@ -512,30 +512,30 @@ void as::IntelX86_64CodeGenerator::declareFloat(const std::string& label, double
 }
 
 void as::IntelX86_64CodeGenerator::addStandardFunctions(){
-    if(program.cg.is_reachable(context->getFunction("_F5printC"))){
+    if(program.cg.is_reachable(context.getFunction("_F5printC"))){
         output_function("x86_64_printC");
     }
 
-    if(program.cg.is_reachable(context->getFunction("_F5printS"))){
+    if(program.cg.is_reachable(context.getFunction("_F5printS"))){
         output_function("x86_64_printS");
     }
 
     //Memory management functions are included the three together
-    if(context->exists("_F4mainAS") || program.cg.is_reachable(context->getFunction("_F4freePI")) || program.cg.is_reachable(context->getFunction("_F5allocI"))){
+    if(context.exists("_F4mainAS") || program.cg.is_reachable(context.getFunction("_F4freePI")) || program.cg.is_reachable(context.getFunction("_F5allocI"))){
         output_function("x86_64_alloc");
         output_function("x86_64_init");
         output_function("x86_64_free");
     }
 
-    if(program.cg.is_reachable(context->getFunction("_F4timeAI"))){
+    if(program.cg.is_reachable(context.getFunction("_F4timeAI"))){
         output_function("x86_64_time");
     }
 
-    if(program.cg.is_reachable(context->getFunction("_F8durationAIAI"))){
+    if(program.cg.is_reachable(context.getFunction("_F8durationAIAI"))){
         output_function("x86_64_duration");
     }
 
-    if(program.cg.is_reachable(context->getFunction("_F9read_char"))){
+    if(program.cg.is_reachable(context.getFunction("_F9read_char"))){
         output_function("x86_64_read_char");
     }
 }

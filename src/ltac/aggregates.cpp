@@ -19,9 +19,7 @@
 using namespace eddic;
 
 void ltac::allocate_aggregates(mtac::Program& program){
-    timing_timer timer(program.context->timing(), "aggregates_aloocation");
-
-    auto global_context = program.context;
+    timing_timer timer(program.context.timing(), "aggregates_aloocation");
 
     for(auto& function : program.functions){
         auto& function_context = function.context;

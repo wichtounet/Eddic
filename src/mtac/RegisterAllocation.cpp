@@ -18,20 +18,20 @@
 using namespace eddic;
 
 void mtac::register_param_allocation(mtac::Program& program, Platform platform){
-    timing_timer timer(program.context->timing(), "param_register_allocation");
+    timing_timer timer(program.context.timing(), "param_register_allocation");
 
-    auto descriptor = getPlatformDescriptor(platform);
+    const auto *descriptor = getPlatformDescriptor(platform);
 
     auto maxInt = descriptor->numberOfIntParamRegisters();
     auto maxFloat = descriptor->numberOfFloatParamRegisters();
 
-    for(auto& function_info : program.context->functions()){
-        auto& function = function_info.second;
+    for(auto& function_info : program.context.functions()){
+        const auto& function = function_info.second;
 
         //Only custom functions have a context
         if(function.context()){
             for(unsigned int i = 0; i < function.parameters().size(); ++i){
-                auto& parameter = function.parameter(i);
+                const auto& parameter = function.parameter(i);
                 auto type = parameter.type();
                 unsigned int position = function.parameter_position_by_type(parameter.name());
                 auto param = function.context()->getVariable(parameter.name());

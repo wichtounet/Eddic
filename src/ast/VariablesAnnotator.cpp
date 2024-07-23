@@ -32,10 +32,10 @@ using namespace eddic;
 namespace {
 
 struct VariablesVisitor : public boost::static_visitor<> {
-    std::shared_ptr<GlobalContext> context;
+    GlobalContext & context;
     std::shared_ptr<ast::TemplateEngine> template_engine;
 
-    VariablesVisitor(std::shared_ptr<GlobalContext> context, std::shared_ptr<ast::TemplateEngine> template_engine) :
+    VariablesVisitor(GlobalContext & context, std::shared_ptr<ast::TemplateEngine> template_engine) :
             context(context), template_engine(template_engine) {
                 //NOP
     }
@@ -146,8 +146,6 @@ void ast::VariableAnnotationPass::apply_struct_destructor(ast::Destructor& destr
 }
 
 void ast::VariableAnnotationPass::apply_program(ast::SourceFile& program, bool indicator){
-    context = program.context;
-
     if(!indicator){
         VariablesVisitor visitor(context, template_engine);
 

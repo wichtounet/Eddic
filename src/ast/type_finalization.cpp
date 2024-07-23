@@ -28,10 +28,10 @@ using namespace eddic;
 
 void ast::TypeFinalizationPass::apply_struct(ast::struct_definition & struct_, bool) {
     if (!struct_.struct_type) {
-        context->error_handler.semantical_exception("The structure " + struct_.name + " cannot be fully resolved", struct_);
+        context.error_handler.semantical_exception("The structure " + struct_.name + " cannot be fully resolved", struct_);
     }
 
-    auto signature = context->get_struct_safe(struct_.mangled_name);
+    auto signature = context.get_struct_safe(struct_.mangled_name);
 
     // Finalize all member pointers
 
@@ -40,7 +40,7 @@ void ast::TypeFinalizationPass::apply_struct(ast::struct_definition & struct_, b
             auto & struct_member = (*signature)[member->name];
 
             if (struct_member.type->is_incomplete()) {
-                struct_member.type = visit(ast::TypeTransformer(*context), member->type);
+                struct_member.type = visit(ast::TypeTransformer(context), member->type);
             }
         }
     }

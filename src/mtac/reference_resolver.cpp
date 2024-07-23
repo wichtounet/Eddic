@@ -21,17 +21,19 @@
 using namespace eddic;
 
 mtac::Argument variant_cast(Offset source){
-    if(auto* ptr = boost::get<int>(&source)){
+    if (auto * ptr = boost::get<int>(&source)) {
         return *ptr;
-    } else if(auto* ptr = boost::get<std::shared_ptr<Variable>>(&source)){
-        return *ptr;
-    } else {
-        cpp_unreachable("Invalid source type");
     }
+
+    if (auto * ptr = boost::get<std::shared_ptr<Variable>>(&source)) {
+        return *ptr;
+    }
+
+    cpp_unreachable("Invalid source type");
 }
 
 void mtac::resolve_references(mtac::Program& program){
-    timing_timer timer(program.context->timing(), "resolve_references");
+    timing_timer timer(program.context.timing(), "resolve_references");
 
     for(auto& function : program.functions){
         //This pass is run before basic blocks are extracted

@@ -98,13 +98,13 @@ struct Inspector : public boost::static_visitor<> {
         Collector& collector;
         ast::SourceFile& program;
 
-        std::shared_ptr<GlobalContext> context;
+        GlobalContext & context;
         std::shared_ptr<Configuration> configuration;
 
         bool standard = false;
 
     public:
-        Inspector(Collector& collector, ast::SourceFile& program, std::shared_ptr<GlobalContext> context, std::shared_ptr<Configuration> configuration) :
+        Inspector(Collector& collector, ast::SourceFile& program, GlobalContext & context, std::shared_ptr<Configuration> configuration) :
                 collector(collector), program(program), context(context), configuration(configuration) {}
 
         /* The following constructions can contains instructions with warnings  */
@@ -139,7 +139,7 @@ struct Inspector : public boost::static_visitor<> {
         }
 
         void operator()(ast::SourceFile& program){
-            check(program.context.get());
+            check(&program.context);
 
             visit_each(*this, program);
         }
@@ -148,7 +148,7 @@ struct Inspector : public boost::static_visitor<> {
             for(auto& block : program){
                 if(auto* ptr = boost::get<ast::struct_definition>(&block)){
                     if(!ptr->is_template_declaration() && ptr->header == file){
-                        auto struct_ = context->get_struct_safe(ptr->mangled_name);
+                        auto struct_ = context.get_struct_safe(ptr->mangled_name);
 
                         if(struct_->get_references() > 0){
                             return;
@@ -157,7 +157,7 @@ struct Inspector : public boost::static_visitor<> {
                 }
             }
 
-            warn(context->error_handler.to_string(position), "Useless import: " + file);
+            warn(context.error_handler.to_string(position), "Useless import: " + file);
         }
 
         void operator()(ast::StandardImport& import){
@@ -183,14 +183,14 @@ struct Inspector : public boost::static_visitor<> {
 
             if(!declaration.standard){
                 if(configuration->option_defined("warning-unused")){
-                    auto struct_ = context->get_struct_safe(declaration.mangled_name);
+                    auto struct_ = context.get_struct_safe(declaration.mangled_name);
 
                     if(struct_->get_references() == 0){
-                        warn(context->error_handler.to_string(declaration), "unused structure '" + declaration.name + "'");
+                        warn(context.error_handler.to_string(declaration), "unused structure '" + declaration.name + "'");
                     } else {
                         for(auto& member : struct_->members){
                             if(member.get_references() == 0){
-                                warn(context->error_handler.to_string(declaration), "unused member '" + declaration.name + ".'" + member.name);
+                                warn(context.error_handler.to_string(declaration), "unused member '" + declaration.name + ".'" + member.name);
                             }
                         }
                     }
@@ -211,10 +211,10 @@ struct Inspector : public boost::static_visitor<> {
         void operator()(ast::Cast& cast){
             if(configuration->option_defined("warning-cast")){
                 auto src_type = visit(ast::GetTypeVisitor(), cast.value);
-                auto dest_type = visit(ast::TypeTransformer(*context), cast.type);
+                auto dest_type = visit(ast::TypeTransformer(context), cast.type);
 
                 if(src_type == dest_type){
-                    warn(context->error_handler.to_string(cast), "useless cast");
+                    warn(context.error_handler.to_string(cast), "useless cast");
                 }
             }
         }
@@ -283,7 +283,7 @@ struct Inspector : public boost::static_visitor<> {
                     }
 
                     if(!effects){
-                        warn(context->error_handler.to_string(value), "Statement without any effect");
+                        warn(context.error_handler.to_string(value), "Statement without any effect");
                     }
                 }
 

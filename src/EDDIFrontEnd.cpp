@@ -24,20 +24,17 @@
 
 using namespace eddic;
 
-void check_for_main(std::shared_ptr<GlobalContext> context);
+void check_for_main(GlobalContext & context);
 void generate_program(ast::SourceFile& program, std::shared_ptr<Configuration> configuration, Platform platform, std::shared_ptr<StringPool> pool);
 
-std::unique_ptr<mtac::Program> EDDIFrontEnd::compile(const std::string& file, Platform platform){
-    // Initialize the types
-    init_global_types(platform);
+std::unique_ptr<mtac::Program> EDDIFrontEnd::compile(const std::string& file, Platform platform, GlobalContext & context){
 
-    //The program to build
-    ast::SourceFile source;
-    source.context = std::make_shared<GlobalContext>(platform);
+    //The AST program to build
+    ast::SourceFile source(context);
 
     //Parse the file into the program
     parser_x3::SpiritParser parser;
-    bool parsing = parser.parse(file, source, source.context);
+    bool parsing = parser.parse(file, source, context);
 
     //If the parsing was successfully
     if(parsing){
@@ -66,7 +63,7 @@ std::unique_ptr<mtac::Program> EDDIFrontEnd::compile(const std::string& file, Pl
             return nullptr;
         }
 
-        auto program = std::make_unique<mtac::Program>();
+        auto program = std::make_unique<mtac::Program>(context);
 
         //Generate Three-Address-Code language
         mtac::Compiler compiler;
@@ -93,8 +90,8 @@ void generate_program(ast::SourceFile& source, std::shared_ptr<Configuration> co
     check_for_main(source.context);
 }
 
-void check_for_main(std::shared_ptr<GlobalContext> context){
-    if(!context->exists("_F4main") && !context->exists("_F4mainAS")){
+void check_for_main(GlobalContext & context){
+    if(!context.exists("_F4main") && !context.exists("_F4mainAS")){
         throw SemanticalException("The program does not contain a valid main function");
     }
 }

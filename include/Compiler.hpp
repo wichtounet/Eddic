@@ -13,6 +13,7 @@
 #include <utility>
 
 #include "Platform.hpp"
+#include "GlobalContext.hpp"
 
 namespace eddic {
 
@@ -50,6 +51,11 @@ struct Compiler {
     std::unique_ptr<mtac::Program> compile_mtac(const std::string& file, Platform platform, const std::shared_ptr<Configuration> & configuration, FrontEnd& front_end);
     
     void compile_ltac(mtac::Program& program, Platform platform, const std::shared_ptr<Configuration> & configuration, FrontEnd& front_end);
+
+    void setup_context(Platform platform);
+
+private:
+    std::unique_ptr<GlobalContext> context;
 };
 
 } //end of eddic

@@ -42,7 +42,7 @@ enum class Mode : unsigned int {
  * \see eddic::mtac::Function
  */
 struct Program {
-    std::shared_ptr<GlobalContext> context;
+    GlobalContext & context;
     std::vector<Function> functions;
     Mode mode = Mode::MTAC;
 
@@ -51,7 +51,7 @@ struct Program {
     /*!
      * Create a new Program
      */
-    Program();
+    explicit Program(GlobalContext & context) : context(context) {};
 
     //Program cannot be copied
     Program(const Program& rhs) = delete;

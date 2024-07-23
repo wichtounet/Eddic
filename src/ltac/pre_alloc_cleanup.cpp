@@ -24,7 +24,7 @@ bool is_float_pseudo_reg(Variant& var){
 }
 
 void ltac::pre_alloc_cleanup(mtac::Program& program){
-    timing_timer timer(program.context->timing(), "pre_alloc_cleanup");
+    timing_timer timer(program.context.timing(), "pre_alloc_cleanup");
 
     for(auto& function : program.functions){
         for(auto& bb : function){

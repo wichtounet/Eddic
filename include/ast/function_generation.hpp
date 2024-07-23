@@ -8,14 +8,17 @@
 #ifndef AST_FUNCTION_GENERATION_PASS_H
 #define AST_FUNCTION_GENERATION_PASS_H
 
-#include "ast/ContextAwarePass.hpp"
+#include "ast/Pass.hpp"
 
 namespace eddic {
 
 namespace ast {
 
-struct FunctionGenerationPass : ContextAwarePass {
+struct FunctionGenerationPass : Pass {
     void apply_struct(ast::struct_definition& struct_, bool indicator) override;
+
+    GlobalContext & context;
+    FunctionGenerationPass(GlobalContext & context) : context(context) {}
 };
 
 } //end of ast

@@ -8,14 +8,17 @@
 #ifndef AST_STRUCTURE_CHECK_PASS_H
 #define AST_STRUCTURE_CHECK_PASS_H
 
-#include "ast/ContextAwarePass.hpp"
+#include "ast/Pass.hpp"
 
 namespace eddic {
 
 namespace ast {
 
-struct StructureCheckPass : ContextAwarePass {
+struct StructureCheckPass : Pass {
     void apply_struct(ast::struct_definition& struct_, bool indicator) override;
+
+    GlobalContext & context;
+    StructureCheckPass(GlobalContext & context) : context(context) {}
 };
 
 } //end of ast

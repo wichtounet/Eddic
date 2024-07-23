@@ -220,8 +220,8 @@ struct AnnotateVisitor : public boost::static_visitor<> {
         }
 };
 
-inline AnnotateVisitor make_visitor(std::shared_ptr<GlobalContext> globalContext, FunctionContext & functionContext, Context * currentContext){
-    AnnotateVisitor visitor(*globalContext, functionContext);
+inline AnnotateVisitor make_visitor(GlobalContext & globalContext, FunctionContext & functionContext, Context * currentContext){
+    AnnotateVisitor visitor(globalContext, functionContext);
     visitor.currentContext = currentContext;
     return visitor;
 }
@@ -230,11 +230,9 @@ inline AnnotateVisitor make_visitor(std::shared_ptr<GlobalContext> globalContext
 
 void ast::ContextAnnotationPass::apply_program(ast::SourceFile& program, bool indicator){
     if(indicator){
-        globalContext = program.context;
-        currentContext = globalContext.get();
+        currentContext = &globalContext;
     } else {
-        globalContext = program.context;
-        currentContext = globalContext.get();
+        currentContext = &globalContext;
 
         for(auto it = program.begin(); it < program.end(); ++it){
             if(auto* ptr = boost::get<ast::GlobalVariableDeclaration>(&*it)){
@@ -247,7 +245,7 @@ void ast::ContextAnnotationPass::apply_program(ast::SourceFile& program, bool in
 }
 
 #define HANDLE_FUNCTION() \
-    currentContext = function.context = functionContext = globalContext->new_function_context(configuration).get(); \
+    currentContext = function.context = functionContext = globalContext.new_function_context(configuration).get(); \
     auto visitor = make_visitor(globalContext, *functionContext, currentContext); \
     visit_each(visitor, function.instructions); \
     currentContext = currentContext->parent();

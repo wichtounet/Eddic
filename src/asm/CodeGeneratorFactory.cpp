@@ -11,7 +11,7 @@
 
 using namespace eddic;
 
-std::unique_ptr<as::CodeGenerator> eddic::as::CodeGeneratorFactory::get(Platform platform, AssemblyFileWriter& writer, mtac::Program& program, std::shared_ptr<GlobalContext> context){
+std::unique_ptr<as::CodeGenerator> eddic::as::CodeGeneratorFactory::get(Platform platform, AssemblyFileWriter& writer, mtac::Program& program, GlobalContext & context){
     switch(platform){
         case Platform::INTEL_X86:
             return std::make_unique<as::IntelX86CodeGenerator>(writer, program, context);

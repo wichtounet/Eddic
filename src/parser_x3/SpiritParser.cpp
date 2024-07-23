@@ -887,8 +887,8 @@ namespace x3_grammar {
 
 } // end of grammar namespace
 
-bool parser_x3::SpiritParser::parse(const std::string& file, ast::SourceFile& program, std::shared_ptr<GlobalContext> context){
-    timing_timer timer(context->timing(), "parsing");
+bool parser_x3::SpiritParser::parse(const std::string& file, ast::SourceFile& program, GlobalContext & context){
+    timing_timer timer(context.timing(), "parsing");
 
     std::ifstream in(file.c_str(), std::ios::binary);
     in.unsetf(std::ios::skipws);
@@ -898,20 +898,20 @@ bool parser_x3::SpiritParser::parse(const std::string& file, ast::SourceFile& pr
     std::size_t size(static_cast<size_t>(in.tellg()));
     in.seekg(0, std::istream::beg);
 
-    int current_file = context->new_file(file);
+    int current_file = context.new_file(file);
 
     x3_grammar::add_keywords();
 
-    std::string& file_contents = context->get_file_content(current_file);
+    std::string& file_contents = context.get_file_content(current_file);
     file_contents.resize(size);
     in.read(&file_contents[0], size);
 
     x3_grammar::iterator_type it(file_contents.begin());
     x3_grammar::iterator_type end(file_contents.end());
 
-    context->error_handler.register_handler(it, end, file);
+    context.error_handler.register_handler(it, end, file);
 
-    auto const parser = x3::with<x3_grammar::error_handler_tag>(std::ref(context->error_handler))[x3_grammar::source_file];
+    auto const parser = x3::with<x3_grammar::error_handler_tag>(std::ref(context.error_handler))[x3_grammar::source_file];
     auto& skipper = x3_grammar::skipper;
 
     bool r = x3::phrase_parse(it, end, parser, skipper, program);
