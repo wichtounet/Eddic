@@ -100,6 +100,11 @@ void mtac::call_graph::release_reachable(){
     reachable.clear();
 }
 
+void mtac::call_graph::clear(){
+    release_reachable();
+    nodes.clear();
+}
+
 bool mtac::call_graph::is_reachable(eddic::Function& function){
     return reachable.find(function) != reachable.end();
 }

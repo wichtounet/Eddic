@@ -34,12 +34,12 @@ class Function;
 
 namespace mtac {
 
-typedef std::unordered_set<std::reference_wrapper<eddic::Function>> Reachable;
+using Reachable = std::unordered_set<std::reference_wrapper<eddic::Function>>;
 
 struct Program;
 
 struct call_graph_node;
-typedef std::shared_ptr<call_graph_node> call_graph_node_p;
+using call_graph_node_p = std::shared_ptr<call_graph_node>;
 
 struct call_graph_edge {
     call_graph_node_p source;
@@ -51,7 +51,7 @@ struct call_graph_edge {
     }
 };
 
-typedef std::shared_ptr<call_graph_edge> call_graph_edge_p;
+using call_graph_edge_p = std::shared_ptr<call_graph_edge>;
 
 struct call_graph_node {
     eddic::Function& function;
@@ -76,6 +76,8 @@ class call_graph {
 
         void compute_reachable();
         void release_reachable();
+
+        void clear();
 
         /*!
          * \brief Generate the list of functions in topological order from

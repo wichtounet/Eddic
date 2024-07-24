@@ -139,8 +139,7 @@ std::unique_ptr<mtac::Program> Compiler::compile_mtac(const std::string& file, P
         mtac::resolve_references(*program);
 
         //Separate into basic blocks
-        const mtac::BasicBlockExtractor extractor;
-        extractor.extract(*program);
+        mtac::extract_basic_blocks(*program);
 
         //If asked by the user, print the Three Address code representation before optimization
         if(configuration->option_defined("mtac-opt")){
@@ -178,4 +177,7 @@ void Compiler::compile_ltac(mtac::Program& program, Platform platform, const std
     back_end->set_configuration(configuration);
 
     back_end->generate(program, platform);
+
+    program.cg.clear();
+    mtac::clear_basic_blocks(program);
 }

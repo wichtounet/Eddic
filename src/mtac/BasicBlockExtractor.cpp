@@ -20,20 +20,20 @@
 
 using namespace eddic;
 
-void mtac::BasicBlockExtractor::extract(mtac::Program& program) const {
+void mtac::extract_basic_blocks(mtac::Program & program) {
     timing_timer timer(program.context.timing(), "basic_block_extraction");
 
-    for(auto& function : program.functions){
+    for (auto & function : program.functions) {
         std::unordered_map<std::string, std::shared_ptr<basic_block>> labels;
-       
-        //The first is always a leader 
+
+        // The first is always a leader
         bool nextIsLeader = true;
 
         function.create_entry_bb();
 
-        //First separate the statements into basic blocks
-        for(auto& quadruple : function.get_statements()){
-            if(quadruple.op == mtac::Operator::LABEL){
+        // First separate the statements into basic blocks
+        for (auto & quadruple : function.get_statements()) {
+            if (quadruple.op == mtac::Operator::LABEL) {
                 function.append_bb();
 
                 labels[quadruple.label()] = function.current_bb();
@@ -42,29 +42,29 @@ void mtac::BasicBlockExtractor::extract(mtac::Program& program) const {
                 continue;
             }
 
-            if(quadruple.op == mtac::Operator::CALL){
-                if(!safe(quadruple.function().mangled_name())){
+            if (quadruple.op == mtac::Operator::CALL) {
+                if (!safe(quadruple.function().mangled_name())) {
                     function.append_bb();
                     nextIsLeader = false;
                 }
             }
 
-            if(nextIsLeader){
+            if (nextIsLeader) {
                 function.append_bb();
                 nextIsLeader = false;
             }
 
-            if(quadruple.is_if() || quadruple.is_if_false() || quadruple.op == mtac::Operator::GOTO || quadruple.op == mtac::Operator::RETURN){
+            if (quadruple.is_if() || quadruple.is_if_false() || quadruple.op == mtac::Operator::GOTO || quadruple.op == mtac::Operator::RETURN) {
                 nextIsLeader = true;
-            } 
+            }
 
             function.current_bb()->emplace_back(std::move(quadruple));
         }
 
-        //Then, replace all the labels by reference to basic blocks
-        for(auto& block : function){
-            for(auto& quadruple : block->statements){
-                if(quadruple.op == mtac::Operator::GOTO || quadruple.is_if() || quadruple.is_if_false()){
+        // Then, replace all the labels by reference to basic blocks
+        for (auto & block : function) {
+            for (auto & quadruple : block->statements) {
+                if (quadruple.op == mtac::Operator::GOTO || quadruple.is_if() || quadruple.is_if_false()) {
                     quadruple.block = labels[quadruple.label()];
                 }
             }
@@ -73,5 +73,11 @@ void mtac::BasicBlockExtractor::extract(mtac::Program& program) const {
         function.create_exit_bb();
 
         function.release_statements();
+    }
+}
+
+void mtac::clear_basic_blocks(mtac::Program & program) {
+    for (auto & function : program.functions) {
+        function.clear_basic_blocks();
     }
 }

@@ -12,16 +12,11 @@
 
 #include "mtac/forward.hpp"
 
-namespace eddic {
+namespace eddic::mtac {
 
-namespace mtac {
+void extract_basic_blocks(mtac::Program & program);
+void clear_basic_blocks(mtac::Program & program);
 
-struct BasicBlockExtractor {
-    void extract(mtac::Program& program) const ;
-};
-
-} //end of ast
-
-} //end of eddic
+} // namespace eddic::mtac
 
 #endif

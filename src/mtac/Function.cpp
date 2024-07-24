@@ -70,6 +70,10 @@ mtac::Function& mtac::Function::operator=(mtac::Function&& rhs){
 }
 
 mtac::Function::~Function(){
+    clear_basic_blocks();
+}
+
+void mtac::Function::clear_basic_blocks() {
     auto block = exit;
 
     while(block){
@@ -85,6 +89,9 @@ mtac::Function::~Function(){
 
         block = next;
     }
+
+    entry = nullptr;
+    exit = nullptr;
 }
 
 bool mtac::Function::is_main() const {

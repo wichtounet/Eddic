@@ -61,6 +61,8 @@ class Function : public std::enable_shared_from_this<Function> {
 
         ~Function();
 
+        void clear_basic_blocks();
+
         std::string get_name() const;
 
         template< class... Args >
