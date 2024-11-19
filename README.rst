@@ -1,6 +1,8 @@
 EDDI Compiler 1.2.3
 ===================
 
+**Update**: This project is not actively maintained, for lack of time.
+
 The compiler of the EDDI programming language.
 
 This compiler outputs code for Intel X86 platform. It supports both 32 and 64 bits architecture. Only Linux is supported for now.
